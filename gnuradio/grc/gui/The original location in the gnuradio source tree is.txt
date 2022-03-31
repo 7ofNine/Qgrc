@@ -1,0 +1,5 @@
+The original location in the gnuradio source tree is
+
+...\gnuradio\grc\gui
+
+The original contents of this folder is probably nearly irrelevant. It is is the component that has to be re-written

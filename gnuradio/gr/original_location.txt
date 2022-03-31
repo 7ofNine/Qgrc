@@ -1,0 +1,22 @@
+The original location in the gnuradio source tree is
+
+...\gnuradio\gnuradio-runtime\python\gnuradio\gr
+
+__init__.py
+exceptions.py
+gateway.py
+hier_block2.py
+tag_utils.py
+top_block.py
+
+the *dll'd and pyd files in this folder are not part
+of this project but are needed for making it run.
+They are artifacts of a boost, and original gnuradio and volk build, with grc disabled 
+
+boost_program_options-XXXXX.dll
+boost_thread-XXXXXX.dll
+gnuradio-pmt.dll
+gnuradio-runtime.dll
+volk.dll
+gr_python.zzzzz.pyd
+

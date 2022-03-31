@@ -1,0 +1,7 @@
+*.dll
+*.vs
+*.sln
+*.dll
+*.pyproj
+**/__pycache__/
+/gnuradio/gr/gr_python.cp310-win_amd64.pyd

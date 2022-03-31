@@ -1,0 +1,19 @@
+BE AWARE!
+
+The locations of the files the in the source tree are not the loctaions of the files where they belong in the 
+original gnuradio source tree. They have to be transfered accordingly and properly integrated into the gnuradio
+CMAKE build process in order to be used as replacement for the original sources.
+These sources don't represent a fully functional gnuradio software system just a gnuradio-companion basis. They are only intended to adapt the gnuradio-companion 
+to a more modern and easier to modify/use Qt implementation instead of using a Gtk version. 
+The actual corresponding gnuradio version can be found in the https://github.com/7ofNine/gnuradio QT branch
+
+The file gnuradio-companion.py is not existant in the source tree. It is generated from the 
+file gnuradion-companion in the folder
+
+...\gnuradio\grc\scripts
+
+There is also generated the file gnuradio-companion.exe
+
+
+
+

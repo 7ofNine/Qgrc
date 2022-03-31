@@ -1,0 +1,17 @@
+The original location in the gnuradio source tree is
+
+...\gnuradio\grc\core
+
+__init__.py
+bas.py
+cache.py
+Config.py
+Connection.py
+Constants.py
+errors.py
+FLowGraph.py
+Messages.py
+platform.py
+
+default_floow_graph.dtd
+FlowGraph.dtd
