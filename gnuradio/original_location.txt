@@ -1,4 +1,4 @@
-The original location in the source tree is
+The original location in the gnuradio source tree is
 
 ...\gnuradio\gnuradio-runtime\python\gnuradio
 
