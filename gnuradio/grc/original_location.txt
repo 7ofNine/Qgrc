@@ -1,0 +1,3 @@
+The folder gui_qt is originally in this location but only visible in the feature-gui-qt-4 branch.
+The branch name is somewhat misleading and should actually be Qt5 but even that is outdated and changed to Qt6.
+This implementation uses Qt6.
