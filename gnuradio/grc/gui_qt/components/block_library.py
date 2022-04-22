@@ -23,8 +23,8 @@ import logging
 # Third-party  modules
 import six
 
-from PyQt5 import QtCore, QtGui, QtWidgets
-from PyQt5.QtGui import QStandardItemModel
+from PyQt6 import QtCore, QtGui, QtWidgets
+from PyQt6.QtGui import QStandardItemModel
 
 # Custom modules
 from .canvas.block import Block
@@ -108,7 +108,7 @@ class BlockLibrary(QtWidgets.QDockWidget, base.Component):
         library.setObjectName('block_library::library')
         library.setModel(self._model)
         library.setDragEnabled(True)
-        library.setDragDropMode(QtWidgets.QAbstractItemView.DragOnly)
+        library.setDragDropMode(QtWidgets.QAbstractItemView.DragDropMode.DragOnly)
         #library.setColumnCount(1)
         library.setHeaderHidden(True)
         # Expand categories with a single click
@@ -143,9 +143,9 @@ class BlockLibrary(QtWidgets.QDockWidget, base.Component):
         self.populate_tree(self._block_tree)
 
         completer = QtWidgets.QCompleter(self._block_tree_flat.keys())
-        completer.setCompletionMode(QtWidgets.QCompleter.InlineCompletion)
-        completer.setCaseSensitivity(QtCore.Qt.CaseInsensitive)
-        completer.setFilterMode(QtCore.Qt.MatchContains)
+        completer.setCompletionMode(QtWidgets.QCompleter.CompletionMode.InlineCompletion)
+        completer.setCaseSensitivity(QtCore.Qt.CaseSensitivity.CaseInsensitive)
+        completer.setFilterMode(QtCore.Qt.MatchFlag.MatchContains)
         self._search_bar.setCompleter(completer)
 
         self._search_bar.textChanged.connect(lambda x: self.populate_tree(self._block_tree, get_items(completer.completionModel())))
@@ -269,7 +269,7 @@ class BlockLibrary(QtWidgets.QDockWidget, base.Component):
                     child_item.setText(obj.label)
                     child_item.setDragEnabled(True)
                     child_item.setSelectable(True)
-                    child_item.setData(QtCore.QVariant(obj.key), role=QtCore.Qt.UserRole,)
+                    child_item.setData(QtCore.QVariant(obj.key), role=QtCore.Qt.ItemDataRole.UserRole,)
                 parent.appendRow(child_item)
             return found
 

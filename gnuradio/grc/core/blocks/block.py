@@ -130,9 +130,10 @@ class Block(Element):
 
         self.update_bus_logic()
         # disconnect hidden ports
+        test = [p for p in self.ports() if p.hidden]
+        
         self.parent_flowgraph.disconnect(
             *[p for p in self.ports() if p.hidden])
-
         self.active_sources = [p for p in self.sources if not p.hidden]
         self.active_sinks = [p for p in self.sinks if not p.hidden]
 

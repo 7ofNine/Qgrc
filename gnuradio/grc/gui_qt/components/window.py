@@ -26,9 +26,9 @@ import subprocess
 # Third-party  modules
 import six
 
-from PyQt5 import QtCore, QtGui, QtWidgets
-from PyQt5.Qt import Qt
-from PyQt5.QtGui import QStandardItemModel
+from PyQt6 import QtCore, QtGui, QtWidgets
+from PyQt6.QtCore import Qt
+from PyQt6.QtGui import QStandardItemModel
 
 # Custom modules
 from . import FlowgraphView
@@ -39,7 +39,7 @@ from . import RotateCommand
 log = logging.getLogger(__name__)
 
 # Shortcuts
-Action = QtWidgets.QAction
+Action = QtGui.QAction
 Menu = QtWidgets.QMenu
 Toolbar = QtWidgets.QToolBar
 Icons = QtGui.QIcon.fromTheme
@@ -54,22 +54,21 @@ class MainWindow(QtWidgets.QMainWindow, base.Component):
         base.Component.__init__(self)
 
         log.debug("Setting the main window")
-        self.setObjectName('main')
+        self.setObjectName('MainWindow')
         self.setWindowTitle(_('window-title'))
-        self.setDockOptions(QtWidgets.QMainWindow.AllowNestedDocks |
-                            QtWidgets.QMainWindow.AllowTabbedDocks |
-                            QtWidgets.QMainWindow.AnimatedDocks)
-
+#        self.setDockOptions(QtWidgets.QMainWindow.AllowNestedDocks |
+#                            QtWidgets.QMainWindow.AllowTabbedDocks |
+#                            QtWidgets.QMainWindow.AnimatedDocks)
+        self.setDockNestingEnabled(True);
         # Setup the window icon
         icon = QtGui.QIcon(self.settings.path.ICON)
         log.debug("Setting window icon - ({0})".format(self.settings.path.ICON))
         self.setWindowIcon(icon)
-
-        screen = QtWidgets.QDesktopWidget().availableGeometry()
+        screen = self.screen().availableGeometry()
         log.debug("Setting window size - ({}, {})".format(screen.width(), screen.height()))
-        self.resize(int(screen.width() * 0.50), screen.height())
+        self.resize(screen.width() // 2, screen.height())
 
-        self.setCorner(Qt.BottomLeftCorner, Qt.LeftDockWidgetArea)
+        self.setCorner(Qt.Corner.BottomLeftCorner, Qt.DockWidgetArea.LeftDockWidgetArea)
 
         self.menuBar().setNativeMenuBar(self.settings.window.NATIVE_MENUBAR)
 
@@ -132,7 +131,7 @@ class MainWindow(QtWidgets.QMainWindow, base.Component):
         log.debug("Loading flowgraph model")
         self.fg_view = FlowgraphView(self)
         initial_state = self.platform.parse_flow_graph("")
-        self.fg_view.flowgraph.import_data(initial_state)
+#        self.fg_view.flowgraph.import_data(initial_state)   #only temporary disabled
         log.debug("Adding flowgraph view")
         self.tabWidget = QtWidgets.QTabWidget()
         self.tabWidget.setTabsClosable(True)
@@ -165,59 +164,59 @@ class MainWindow(QtWidgets.QMainWindow, base.Component):
 
         # File Actions
         actions['new'] = Action(Icons("document-new"), _("new"), self,
-                                shortcut=Keys.New, statusTip=_("new-tooltip"))
+                                shortcut=Keys.StandardKey.New, statusTip=_("new-tooltip"))
 
         actions['open'] = Action(Icons("document-open"), _("open"), self,
-                                 shortcut=Keys.Open, statusTip=_("open-tooltip"))
+                                 shortcut=Keys.StandardKey.Open, statusTip=_("open-tooltip"))
 
         actions['close'] = Action(Icons("window-close"), _("close"), self,
-                                  shortcut=Keys.Close, statusTip=_("close-tooltip"))
+                                  shortcut=Keys.StandardKey.Close, statusTip=_("close-tooltip"))
 
         actions['close_all'] = Action(Icons("window-close"), _("close_all"), self,
                                       statusTip=_("close_all-tooltip"))
         actions['save'] = Action(Icons("document-save"), _("save"), self,
-                                 shortcut=Keys.Save, statusTip=_("save-tooltip"))
+                                 shortcut=Keys.StandardKey.Save, statusTip=_("save-tooltip"))
 
         actions['save_as'] = Action(Icons("document-save-as"), _("save_as"), self,
-                                    shortcut=Keys.SaveAs, statusTip=_("save_as-tooltip"))
+                                    shortcut=Keys.StandardKey.SaveAs, statusTip=_("save_as-tooltip"))
 
         actions['print'] = Action(Icons('document-print'), _("print"), self,
-                                  shortcut=Keys.Print, statusTip=_("print-tooltip"))
+                                  shortcut=Keys.StandardKey.Print, statusTip=_("print-tooltip"))
 
         actions['screen_capture'] = Action(Icons('camera-photo'), _("screen_capture"), self,
                                            statusTip=_("screen_capture-tooltip"))
 
         actions['exit'] = Action(Icons("application-exit"), _("exit"), self,
-                                 shortcut=Keys.Quit, statusTip=_("exit-tooltip"))
+                                 shortcut=Keys.StandardKey.Quit, statusTip=_("exit-tooltip"))
 
         # Edit Actions
         actions['undo'] = Action(Icons('edit-undo'), _("undo"), self,
-                                 shortcut=Keys.Undo, statusTip=_("undo-tooltip"))
+                                 shortcut=Keys.StandardKey.Undo, statusTip=_("undo-tooltip"))
 
         actions['redo'] = Action(Icons('edit-redo'), _("redo"), self,
-                                 shortcut=Keys.Redo, statusTip=_("redo-tooltip"))
+                                 shortcut=Keys.StandardKey.Redo, statusTip=_("redo-tooltip"))
 
         actions['cut'] = Action(Icons('edit-cut'), _("cut"), self,
-                                shortcut=Keys.Cut, statusTip=_("cut-tooltip"))
+                                shortcut=Keys.StandardKey.Cut, statusTip=_("cut-tooltip"))
 
         actions['copy'] = Action(Icons('edit-copy'), _("copy"), self,
-                                 shortcut=Keys.Copy, statusTip=_("copy-tooltip"))
+                                 shortcut=Keys.StandardKey.Copy, statusTip=_("copy-tooltip"))
 
         actions['paste'] = Action(Icons('edit-paste'), _("paste"), self,
-                                  shortcut=Keys.Paste, statusTip=_("paste-tooltip"))
+                                  shortcut=Keys.StandardKey.Paste, statusTip=_("paste-tooltip"))
 
         actions['delete'] = Action(Icons('edit-delete'), _("delete"), self,
-                                   shortcut=Keys.Delete, statusTip=_("delete-tooltip"))
+                                   shortcut=Keys.StandardKey.Delete, statusTip=_("delete-tooltip"))
 
         actions['select_all'] = Action(Icons('edit-select_all'), _("select_all"), self,
-                                   shortcut=Keys.SelectAll, statusTip=_("select_all-tooltip"))
+                                   shortcut=Keys.StandardKey.SelectAll, statusTip=_("select_all-tooltip"))
 
         actions['rotate_ccw'] = Action(Icons('object-rotate-left'), _("rotate_ccw"), self,
-                                       shortcut=Keys.MoveToPreviousChar,
+                                       shortcut=Keys.StandardKey.MoveToPreviousChar,
                                        statusTip=_("rotate_ccw-tooltip"))
 
         actions['rotate_cw'] = Action(Icons('object-rotate-right'), _("rotate_cw"), self,
-                                      shortcut=Keys.MoveToNextChar,
+                                      shortcut=Keys.StandardKey.MoveToNextChar,
                                       statusTip=_("rotate_cw-tooltip"))
 
         actions['enable'] = Action(_("enable"), self,
@@ -247,14 +246,14 @@ class MainWindow(QtWidgets.QMainWindow, base.Component):
                                    statusTip=_("errors-tooltip"))
 
         actions['find'] = Action(Icons('edit-find'), _("find"), self,
-                                 shortcut=Keys.Find,
+                                 shortcut=Keys.StandardKey.Find,
                                  statusTip=_("find-tooltip"))
 
         # Help Actions
         actions['about'] = Action(Icons('help-about'), _("about"), self,
                                   statusTip=_("about-tooltip"))
 
-        actions['about_qt'] = Action(self.style().standardIcon(QStyle.SP_TitleBarMenuButton), _("about-qt"), self,
+        actions['about_qt'] = Action(self.style().standardIcon(QStyle.StandardPixmap.SP_TitleBarMenuButton), _("about-qt"), self,
                                      statusTip=_("about-tooltip"))
 
         actions['generate'] = Action(Icons('system-run'), _("process-generate"), self,
@@ -268,7 +267,7 @@ class MainWindow(QtWidgets.QMainWindow, base.Component):
                                  shortcut='F7', statusTip=_("process-kill-tooltip"))
 
         actions['help'] = Action(Icons('help-browser'), _("help"), self,
-                                 shortcut=Keys.HelpContents, statusTip=_("help-tooltip"))
+                                 shortcut=Keys.StandardKey.HelpContents, statusTip=_("help-tooltip"))
 
         actions['types'] = Action("Types", self)
 
@@ -672,3 +671,40 @@ class MainWindow(QtWidgets.QMainWindow, base.Component):
 
     def library_toggled(self):
         log.debug('library_toggled')
+
+    def select_all_triggered(self):
+        log.warning('select all')
+
+    def bypass_triggered(self):
+        log.warning('bypass')
+
+    def vertical_align_top_triggered(self):
+        log.warning('vertical align top')
+
+    def vertical_align_middle_triggered(self):
+        log.warning('vertical align middle')
+
+    def vertical_align_bottom_triggered(self):
+        log.warning('vertical align bottom')
+
+    def horizontal_align_left_triggered(self):
+        log.warning('horizontal align left')
+
+    def horizontal_align_center_triggered(self):
+        log.warning('horizontal align center')
+
+    def horizontal_align_right_triggered(self):
+        log.warning('horizontal align right')
+
+    def create_hier_triggered(self):
+        log.warning('create hier')
+
+    def open_hier_triggered(self):
+        log.warning('create hier')
+
+    def toggle_source_bus_triggered(self):
+        log.warning('toggle source bus')
+
+    def toggle_sink_bus_triggered(self):
+        log.warning('toggle sink bus')
+

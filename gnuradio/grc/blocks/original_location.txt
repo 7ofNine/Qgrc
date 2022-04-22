@@ -1,1 +1,17 @@
 The original location in the gnuradio source tree is
+\...\grc\blocks
+
+For easy testing without building (temporarily at least) the whole gnuradio tree copy these *.yaml files
+to <user>\.grc_gnuradio
+This allowss a simple configuration to go through.
+
+
+Remark:
+There are three types of *.yaml blocks characterrized by the syntax *.xxxx.yaml.
+for
+xxxx:
+block: normal blocks
+domain: doamin descriptor
+tree: block tree descriptor
+
+this loads corresponding loaders

@@ -25,13 +25,13 @@ import textwrap
 # Third-party  modules
 import six
 
-from PyQt5 import QtCore, QtGui, QtWidgets
+from PyQt6 import QtCore, QtGui, QtWidgets
 
 # Custom modules
 from .. import base
 
 # Shortcuts
-Action = QtWidgets.QAction
+Action = QtGui.QAction
 Menu = QtWidgets.QMenu
 Toolbar = QtWidgets.QToolBar
 Icons = QtGui.QIcon.fromTheme

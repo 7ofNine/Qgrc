@@ -27,8 +27,8 @@ from ast import literal_eval
 # Third-party modules
 import six
 
-from PyQt5 import QtGui, QtCore, QtWidgets
-from PyQt5.QtCore import Qt
+from PyQt6 import QtGui, QtCore, QtWidgets
+from PyQt6.QtCore import Qt
 
 from itertools import count
 
@@ -62,7 +62,7 @@ class Flowgraph(QtWidgets.QGraphicsScene, base.Component, CoreFlowgraph):
         self.newConnection = None
         self.startPort = None
 
-        self.undoStack = QtWidgets.QUndoStack()
+        self.undoStack = QtGui.QUndoStack()
         self.undoAction = self.undoStack.createUndoAction(self, "Undo")
         self.redoAction = self.undoStack.createRedoAction(self, "Redo")
 
@@ -81,14 +81,14 @@ class Flowgraph(QtWidgets.QGraphicsScene, base.Component, CoreFlowgraph):
 
     def dragEnterEvent(self, event):
         if event.mimeData().hasUrls:
-            event.setDropAction(Qt.CopyAction)
+            event.setDropAction(Qt.DropAction.CopyAction)
             event.accept()
         else:
             event.ignore()
 
     def dragMoveEvent(self, event):
         if event.mimeData().hasUrls:
-            event.setDropAction(Qt.CopyAction)
+            event.setDropAction(Qt.DropAction.CopyAction)
             event.accept()
         else:
             event.ignore()
@@ -321,7 +321,7 @@ class FlowgraphView(QtWidgets.QGraphicsView, base.Component): # added base.Compo
     def __init__(self, parent, filename=None):
         super(FlowgraphView, self).__init__()
         self.setParent(parent)
-        self.setAlignment(Qt.AlignLeft|Qt.AlignTop)
+        self.setAlignment(Qt.AlignmentFlag.AlignLeft|Qt.AlignmentFlag.AlignTop)
 
         self.flowgraph = Flowgraph()
 
@@ -334,7 +334,7 @@ class FlowgraphView(QtWidgets.QGraphicsView, base.Component): # added base.Compo
             self.initEmpty()
 
         self.setScene(self.flowgraph)
-        self.setBackgroundBrush(QtGui.QBrush(Qt.white))
+        self.setBackgroundBrush(QtGui.QBrush(Qt.GlobalColor.white))
 
         self.isPanning    = False
         self.mousePressed = False

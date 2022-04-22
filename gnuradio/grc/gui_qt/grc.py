@@ -24,7 +24,7 @@ import textwrap
 # Third-party  modules
 import six
 
-from PyQt5 import QtCore, QtGui, QtWidgets
+from PyQt6 import QtCore, QtGui, QtWidgets
 
 # Custom modules
 from . import base
@@ -136,4 +136,4 @@ class Application(QtWidgets.QApplication):
         ''' Launches the main QT event loop '''
         # Show the main window after everything is initialized.
         self.MainWindow.show()
-        return (self.exec_())
+        return (self.exec())

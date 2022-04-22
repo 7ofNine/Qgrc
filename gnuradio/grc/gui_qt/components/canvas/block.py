@@ -1,8 +1,8 @@
 import logging
 
 # third-party modules
-from PyQt5 import QtGui, QtCore, QtWidgets
-from PyQt5.QtCore import Qt
+from PyQt6 import QtGui, QtCore, QtWidgets
+from PyQt6.QtCore import Qt
 
 from . import colors
 from ... import Constants
@@ -243,7 +243,7 @@ class Block(QtWidgets.QGraphicsItem, CoreBlock):
                      get_min_height_for_ports(self.active_sources))
         # figure out width of block based on widest line of text
         fm = QtGui.QFontMetrics(QtGui.QFont('Helvetica Bold', 10))
-        largest_width = fm.width(self.label)
+        largest_width = fm.horizontalAdvance(self.label)
         for key, item in self.params.items():
             name = item.name
             value = item.value
@@ -254,8 +254,8 @@ class Block(QtWidgets.QGraphicsItem, CoreBlock):
                 if len(value) > LONG_VALUE:
                     value = value[:LONG_VALUE-3] + '...'
                 '''
-                if fm.width(full_line) > largest_width:
-                    largest_width = fm.width(full_line)
+                if fm.horizontalAdvance(full_line) > largest_width:
+                    largest_width = fm.horizontalAdvance(full_line)
         self.width = largest_width + 15
 
         bussified = self.current_bus_structure['source'], self.current_bus_structure['sink']
@@ -332,8 +332,8 @@ class Block(QtWidgets.QGraphicsItem, CoreBlock):
         self.movingFrom = None
         self.movingTo = None
 
-        self.setFlag(QtWidgets.QGraphicsItem.ItemIsMovable)
-        self.setFlag(QtWidgets.QGraphicsItem.ItemIsSelectable)
+        self.setFlag(QtWidgets.QGraphicsItem.GraphicsItemFlag.ItemIsMovable)
+        self.setFlag(QtWidgets.QGraphicsItem.GraphicsItemFlag.ItemIsSelectable)
 
     def _update_colors(self):
         def get_bg():

@@ -144,7 +144,7 @@ templates:
         import sys
         import signal
         % if generate_options == 'qt_gui':
-        from PyQt5 import Qt
+        from PyQt6 import Qt
         % endif
         % if not generate_options.startswith('hb'):
         from argparse import ArgumentParser

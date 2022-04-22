@@ -25,13 +25,13 @@ import textwrap
 # Third-party  modules
 import six
 
-from PyQt5 import QtCore, QtGui, QtWidgets
+from PyQt6 import QtCore, QtGui, QtWidgets
 
 # Custom modules
 from .. import base
 
 # Shortcuts
-Action = QtWidgets.QAction
+Action = QtGui.QAction
 Menu = QtWidgets.QMenu
 Toolbar = QtWidgets.QToolBar
 Icons = QtGui.QIcon.fromTheme
@@ -107,7 +107,7 @@ class Console(QtWidgets.QDockWidget, base.Component):
         text.setUndoRedoEnabled(False)
         text.setReadOnly(True)
         text.setCursorWidth(0)
-        text.setTextInteractionFlags(QtCore.Qt.TextSelectableByKeyboard | QtCore.Qt.TextSelectableByMouse)
+        text.setTextInteractionFlags(QtCore.Qt.TextInteractionFlag.TextSelectableByKeyboard | QtCore.Qt.TextInteractionFlag.TextSelectableByMouse)
         text.setHtml(textwrap.dedent(HTML))
         self._text = text
 
