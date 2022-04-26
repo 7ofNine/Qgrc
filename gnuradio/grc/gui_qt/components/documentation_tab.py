@@ -20,9 +20,6 @@ from __future__ import absolute_import, print_function
 # Standard modules
 import logging
 
-# Third-party  modules
-import six
-
 from PyQt6 import QtCore, QtGui, QtWidgets
 from PyQt6.QtGui import QStandardItemModel
 

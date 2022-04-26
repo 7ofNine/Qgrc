@@ -10,6 +10,7 @@ import itertools
 import sys
 import types
 import logging
+import shlex
 
 from operator import methodcaller, attrgetter
 
@@ -17,7 +18,6 @@ from . import Messages, blocks
 from .Constants import FLOW_GRAPH_FILE_FORMAT_VERSION
 from .base import Element
 from .utils import expr_utils
-from .utils.backports import shlex
 
 log = logging.getLogger(__name__)
 

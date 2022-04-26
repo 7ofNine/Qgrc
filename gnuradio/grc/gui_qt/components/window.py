@@ -24,7 +24,6 @@ import sys
 import subprocess
 
 # Third-party  modules
-import six
 
 from PyQt6 import QtCore, QtGui, QtWidgets
 from PyQt6.QtCore import Qt

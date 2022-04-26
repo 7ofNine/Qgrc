@@ -20,9 +20,6 @@ from __future__ import absolute_import, print_function
 # Standard modules
 import logging
 
-# Third-party  modules
-import six
-
 from PyQt6 import QtCore, QtGui, QtWidgets
 from PyQt6.QtGui import QStandardItemModel
 
@@ -78,7 +75,7 @@ class LibraryView(QtWidgets.QTreeView):
 class BlockLibrary(QtWidgets.QDockWidget, base.Component):
 
     def __init__(self):
-        QtWidgets.QDockWidget.__init__(self)
+        QtWidgets.QDockWidget.__init__(self)                   # this is the view not the model. should be reworked!!
         base.Component.__init__(self)
 
         self.setObjectName('block_library')
@@ -102,7 +99,7 @@ class BlockLibrary(QtWidgets.QDockWidget, base.Component):
         self._layout = layout
 
         # Setup the model for holding block data
-        self._model = QtGui.QStandardItemModel()
+        self._model = QtGui.QStandardItemModel()                              # this is the data model. Should be in its own class
 
         library = LibraryView(container)
         library.setObjectName('block_library::library')
@@ -135,7 +132,7 @@ class BlockLibrary(QtWidgets.QDockWidget, base.Component):
         #library.headerItem().setText(0, _translate("blockLibraryDock", "Blocks", None))
         #QtCore.QMetaObject.connectSlotsByName(blockLibraryDock)
 
-        ### Loading blocks
+        ### Loading blocks                                                        # the model, i.e. the actual library
 
         # Keep as a separate function so it can be called at a later point (Reloading blocks)
         self._block_tree_flat = {}
@@ -215,7 +212,7 @@ class BlockLibrary(QtWidgets.QDockWidget, base.Component):
 
         log.info("Loading blocks")
         block_tree = {}
-        for block in six.itervalues(self.app.platform.blocks):
+        for block in self.app.platform.blocks.values():
             if block.category:
                 # Blocks with None category should be left out for whatever reason (e.g. not installed)
                 #print(block.category) # in list form, e.g. ['Core', 'Digital Television', 'ATSC']

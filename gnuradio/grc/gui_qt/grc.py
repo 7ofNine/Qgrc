@@ -22,7 +22,6 @@ import logging
 import textwrap
 
 # Third-party  modules
-import six
 
 from PyQt6 import QtCore, QtGui, QtWidgets
 

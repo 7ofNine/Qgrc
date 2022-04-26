@@ -25,7 +25,6 @@ import xml.etree.ElementTree as ET
 from ast import literal_eval
 
 # Third-party modules
-import six
 
 from PyQt6 import QtGui, QtCore, QtWidgets
 from PyQt6.QtCore import Qt
@@ -135,7 +134,7 @@ class Flowgraph(QtWidgets.QGraphicsScene, base.Component, CoreFlowgraph):
                 data_items = self.decode_data(bytearray)
 
                 # Find block in tree so that we can pull out label
-                block_key = data_items[0][QtCore.Qt.UserRole].value()
+                block_key = data_items[0][QtCore.Qt.ItemDataRole.UserRole].value()
                 block = self.platform.blocks[block_key]
 
                 # Add block of this key at the cursor position

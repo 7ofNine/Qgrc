@@ -125,7 +125,7 @@ class SubprocessLoader(object):
         if self._thread is not None:
             return
         self._shutdown.clear()
-        thread = self._thread = threading.Thread(target=self.run_worker)
+        thread = self._thread = threading.Thread(target=self.run_worker, name="Doc Extractor")
         thread.daemon = True
         thread.start()
 
