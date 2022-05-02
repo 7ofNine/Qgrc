@@ -49,9 +49,9 @@ class PropsDialog(QtWidgets.QDialog):
         self.tabs = QtWidgets.QTabWidget()
         for cat in unique_categories():
             qvb = QtWidgets.QGridLayout()
-            qvb.setAlignment(QtCore.Qt.AlignTop)
-            qvb.setVerticalSpacing(5.0)
-            qvb.setHorizontalSpacing(20.0)
+            qvb.setAlignment(QtCore.Qt.AlignmentFlag.AlignTop)
+            qvb.setVerticalSpacing(5)
+            qvb.setHorizontalSpacing(20)
             i = 0
             for param in self._block.params.values():
                 if param.category == cat and param.hide != 'all':
@@ -83,7 +83,7 @@ class PropsDialog(QtWidgets.QDialog):
             tab.setLayout(qvb)
             self.tabs.addTab(tab, cat)
 
-        buttons = QtWidgets.QDialogButtonBox.Ok | QtWidgets.QDialogButtonBox.Cancel
+        buttons = QtWidgets.QDialogButtonBox.StandardButton.Ok | QtWidgets.QDialogButtonBox.StandardButton.Cancel
         self.buttonBox = QtWidgets.QDialogButtonBox(buttons)
         self.buttonBox.accepted.connect(self.accept)
         self.buttonBox.rejected.connect(self.reject)
@@ -115,7 +115,7 @@ class BlockTitle(QtWidgets.QLabel):
         title = block_key.replace('_', ' ').title()
         self.setText(title)
         title_font = QtGui.QFont("Sans Serif", 9, QtGui.QFont.Bold)
-        self.setAlignment(Qt.AlignCenter)
+        self.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.setFont(title_font)
         self.setContentsMargins(5, 5, 5, 5)
         self.title_only = False
@@ -166,7 +166,7 @@ class BlockParams(QtWidgets.QWidget):
         for row, (key, value) in enumerate(params):
             if value is not None:
                 param_label = QtWidgets.QLabel(key+': ')
-                param_label.setAlignment(Qt.AlignRight)
+                param_label.setAlignment(Qt.AlignmentFlag.AlignRight)
                 param_label.setFont(label_font)
 
                 if len(value) > LONG_VALUE:
@@ -241,21 +241,28 @@ class Block(QtWidgets.QGraphicsItem, CoreBlock):
         self.height = max(self.height,
                      get_min_height_for_ports(self.active_sinks),
                      get_min_height_for_ports(self.active_sources))
+
         # figure out width of block based on widest line of text
-        fm = QtGui.QFontMetrics(QtGui.QFont('Helvetica Bold', 10))
-        largest_width = fm.horizontalAdvance(self.label)
+        labelFont = QtGui.QFont('Helvetica', 10)
+        labelFont.setBold(True);
+        labelFontm = QtGui.QFontMetrics(labelFont)
+        largest_width = labelFontm.horizontalAdvance(self.label)   # length of the label
+
+        nameFont  =  labelFont                                              # should be calculated in a single location not twice! Define Constants for GUI. Configurable??
+        nameFontm =  QtGui.QFontMetrics(nameFont)
+        valueFont =  QtGui.QFont('Helvetica', 10)
+        valueFont.setBold(False)
+        valueFontm = QtGui.QFontMetrics(valueFont)
+
         for key, item in self.params.items():
             name = item.name
             value = item.value
             value_label = item.options[value] if value in item.options else value
             if value is not None and item.hide == 'none':
-                full_line = name + ": " + value_label
-                '''
-                if len(value) > LONG_VALUE:
-                    value = value[:LONG_VALUE-3] + '...'
-                '''
-                if fm.horizontalAdvance(full_line) > largest_width:
-                    largest_width = fm.horizontalAdvance(full_line)
+                full_line_length = nameFontm.horizontalAdvance(name + ": ") + valueFontm.horizontalAdvance(value_label)
+                if full_line_length > largest_width:
+                    largest_width = full_line_length
+
         self.width = largest_width + 15
 
         bussified = self.current_bus_structure['source'], self.current_bus_structure['sink']
@@ -371,12 +378,15 @@ class Block(QtWidgets.QGraphicsItem, CoreBlock):
     def paint(self, painter, option, widget):
         x,y = (self.x(), self.y())
         self.states['coordinate'] = (x,y)
+
         # Set font
         font = QtGui.QFont('Helvetica', 10)
         #font.setStretch(70) # makes it more condensed
         font.setBold(True)
-
-        painter.setRenderHint(QtGui.QPainter.Antialiasing)
+        nameFontm = QtGui.QFontMetrics(font)
+        
+        
+        painter.setRenderHint(QtGui.QPainter.RenderHint.Antialiasing)
 
         # Draw main rectangle
         pen = QtGui.QPen(1)
@@ -394,13 +404,14 @@ class Block(QtWidgets.QGraphicsItem, CoreBlock):
         painter.drawRoundedRect(0, 0, self.width, self.height, ARC, ARC);
         painter.setPen(QtGui.QPen(1))
 
+
         # Draw block label text
         painter.setFont(font)
         if self.is_valid():
             painter.setPen(QtGui.QPen(1))
         else:
-            painter.setPen(Qt.red)
-        painter.drawText(QtCore.QRectF(0, 0 - self.height/2 + 10, self.width, self.height), Qt.AlignCenter, self.label)  # NOTE the 3rd/4th arg in  QRectF seems to set the bounding box of the text, so if there is ever any clipping, thats why
+            painter.setPen(Qt.GlobalColor.red)
+        painter.drawText(QtCore.QRectF(0, 0 - self.height/2 + 10, self.width, self.height), Qt.AlignmentFlag.AlignCenter, self.label)  # NOTE the 3rd/4th arg in  QRectF seems to set the bounding box of the text, so if there is ever any clipping, thats why
 
         # Draw param text
         y_offset = 30 # params start 30 down from the top of the box
@@ -412,15 +423,18 @@ class Block(QtWidgets.QGraphicsItem, CoreBlock):
                 if item.is_valid():
                     painter.setPen(QtGui.QPen(1))
                 else:
-                    painter.setPen(Qt.red)
+                    painter.setPen(Qt.GlobalColor.red)
 
-                font.setBold(True)
+                font.setBold(True)  # label font and name font are the same
                 painter.setFont(font)
-                painter.drawText(QtCore.QRectF(7.5, 0 + y_offset, self.width, self.height), Qt.AlignLeft, name + ': ')
-                font.setBold(False)
+                x_offset = 7.5
+                painter.drawText(QtCore.QRectF(x_offset, 0 + y_offset, self.width, self.height), Qt.AlignmentFlag.AlignLeft, name + ': ')
+                writtenWidth = nameFontm.horizontalAdvance(name + ": ")
+                # change font for value
+                font.setBold(False) #value font  
                 painter.setFont(font)
-                fm = QtGui.QFontMetrics(QtGui.QFont('Helvetica Bold', 10))
-                painter.drawText(QtCore.QRectF(7.5 + fm.width(name + ": "), 0 + y_offset, self.width, self.height), Qt.AlignLeft, value_label)
+                x_offset += writtenWidth # advance to after the name
+                painter.drawText(QtCore.QRectF(x_offset, 0 + y_offset, self.width, self.height), Qt.AlignmentFlag.AlignLeft, value_label)
                 y_offset += 20
 
     def boundingRect(self): # required to have

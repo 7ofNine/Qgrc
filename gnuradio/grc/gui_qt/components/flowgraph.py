@@ -161,7 +161,7 @@ class Flowgraph(QtWidgets.QGraphicsScene, base.Component, CoreFlowgraph):
                 block.moveToTop()
                 self.update()
 
-                event.setDropAction(Qt.CopyAction)
+                event.setDropAction(Qt.DropAction.CopyAction)
                 event.accept()
             else:
                 return QtGui.QStandardItemModel.dropMimeData(self, data, action, row, column, parent)
@@ -231,7 +231,7 @@ class Flowgraph(QtWidgets.QGraphicsScene, base.Component, CoreFlowgraph):
                 self.newConnection.setPen(QtGui.QPen(1))
                 self.addItem(self.newConnection)
                 print("clicked a port")
-        if event.button() == Qt.LeftButton:
+        if event.button() == Qt.MouseButton.LeftButton:
             self.mousePressed = True
             super(Flowgraph, self).mousePressEvent(event)
 
@@ -265,13 +265,13 @@ class Flowgraph(QtWidgets.QGraphicsScene, base.Component, CoreFlowgraph):
             self.removeItem(self.newConnection)
             self.newConnection = None
         '''
-        if event.button() == Qt.LeftButton:
-            if event.modifiers() & Qt.ControlModifier:
-                #self.setCursor(Qt.OpenHandCursor)
+        if event.button() == Qt.MouseButton.LeftButton:
+            if event.modifiers() & Qt.KeyboardModifier.ControlModifier:
+                #self.setCursor(Qt.CursorShape.OpenHandCursor)
                 pass
             else:
                 self.isPanning = False
-                #self.setCursor(Qt.ArrowCursor)
+                #self.setCursor(Qt.CursorShape.ArrowCursor)
             self.mousePressed = False
         '''
         super(Flowgraph, self).mouseReleaseEvent(event)
@@ -323,7 +323,6 @@ class FlowgraphView(QtWidgets.QGraphicsView, base.Component): # added base.Compo
         self.setAlignment(Qt.AlignmentFlag.AlignLeft|Qt.AlignmentFlag.AlignTop)
 
         self.flowgraph = Flowgraph()
-
         self.scalefactor = 1.0
 
         self.setSceneRect(0,0,DEFAULT_MAX_X, DEFAULT_MAX_Y)
@@ -333,10 +332,12 @@ class FlowgraphView(QtWidgets.QGraphicsView, base.Component): # added base.Compo
             self.initEmpty()
 
         self.setScene(self.flowgraph)
+        
         self.setBackgroundBrush(QtGui.QBrush(Qt.GlobalColor.white))
 
         self.isPanning    = False
         self.mousePressed = False
+        
 
 
         '''
@@ -347,13 +348,13 @@ class FlowgraphView(QtWidgets.QGraphicsView, base.Component): # added base.Compo
         self.setRenderHints(QPainter.Antialiasing |
                             QPainter.SmoothPixmapTransform)
         self.setAcceptDrops(True)
-        self.setAlignment(Qt.AlignLeft | Qt.AlignTop)
+        self.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop)
         self.setSceneRect(0, 0, self.width(), self.height())
 
         self._dragged_block = None
 
         #ToDo: Better put this in Block()
-        #self.setContextMenuPolicy(Qt.ActionsContextMenu)
+        #self.setContextMenuPolicy(Qt.ContextMenuPolicy.ActionsContextMenu)
         #self.addActions(parent.main_window.menuEdit.actions())
         '''
 
@@ -413,7 +414,7 @@ class FlowgraphView(QtWidgets.QGraphicsView, base.Component): # added base.Compo
 
     def wheelEvent(self,  event):
         # TODO: Support multi touch drag and drop for scrolling through the view
-        #if event.modifiers() == Qt.ControlModifier:
+        #if event.modifiers() == Qt.KeyboardModifier.ControlModifier:
         if False:
             factor = 1.1
 
@@ -438,7 +439,7 @@ class FlowgraphView(QtWidgets.QGraphicsView, base.Component): # added base.Compo
             QtWidgets.QGraphicsView.wheelEvent(self, event)
 
     def mousePressEvent(self,  event):
-        if event.button() == Qt.LeftButton:
+        if event.button() == Qt.MouseButton.LeftButton:
             self.mousePressed = True
             # This will pass the mouse move event to the scene
             super(FlowgraphView, self).mousePressEvent(event)
@@ -456,7 +457,7 @@ class FlowgraphView(QtWidgets.QGraphicsView, base.Component): # added base.Compo
             super(FlowgraphView, self).mouseMoveEvent(event)
 
     def mouseReleaseEvent(self, event):
-        if event.button() == Qt.LeftButton:
+        if event.button() == Qt.MouseButton.LeftButton:
             self.mousePressed = False
         super(FlowgraphView, self).mouseReleaseEvent(event)
 

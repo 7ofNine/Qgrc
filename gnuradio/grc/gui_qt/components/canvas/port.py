@@ -46,25 +46,24 @@ class Port(QtWidgets.QGraphicsItem, CorePort):
         else:
             self.connection_point = self.scenePos() + QtCore.QPointF(15.0, self.height / 2.0)
 
-        self.setFlag(QtWidgets.QGraphicsItem.ItemSendsScenePositionChanges)
+        self.setFlag(QtWidgets.QGraphicsItem.GraphicsItemFlag.ItemSendsScenePositionChanges)
 
         self._border_color = self._bg_color = colors.BLOCK_ENABLED_COLOR
         self.parent_block.parent.addItem(self)
-        self.setFlag(QtWidgets.QGraphicsItem.ItemStacksBehindParent)
+        self.setFlag(QtWidgets.QGraphicsItem.GraphicsItemFlag.ItemStacksBehindParent)
 
-    def itemChange(self, change, value):
-        if self._dir == "sink":
-            self.connection_point = self.scenePos() + QtCore.QPointF(0.0, self.height / 2.0)
-        else:
-            self.connection_point = self.scenePos() + QtCore.QPointF(15.0, self.height / 2.0)
-        for conn in self.connections():
-            conn.updateLine()
-        return QtWidgets.QGraphicsLineItem.itemChange(self, change, value)
-
+    #def itemChange(self, change, value):    # temporary disabled gets invoked when setFlag above is called and fails ! in calling up the hierarchy?
+    #    if self._dir == "sink":
+    #        self.connection_point = self.scenePos() + QtCore.QPointF(0.0, self.height / 2.0)
+    #    else:
+    #        self.connection_point = self.scenePos() + QtCore.QPointF(15.0, self.height / 2.0)
+    #    for conn in self.connections():
+    #        conn.updateLine()
+    #    return QtWidgets.QGraphicsLineItem.itemChange(self, change, value)
     def create_shapes(self):
         """Create new areas and labels for the port."""
         fm = QtGui.QFontMetrics(QtGui.QFont('Helvetica', 8))
-        self.width = max(15, fm.width(self.name) * 1.5)
+        self.width = max(15, fm.horizontalAdvance(self.name) * 1.5)
 
     def create_labels(self, cr=None):
         """Create the labels for the socket."""
@@ -112,7 +111,7 @@ class Port(QtWidgets.QGraphicsItem, CorePort):
         """
         if self.hidden:
             return
-        painter.setRenderHint(QtGui.QPainter.Antialiasing)
+        painter.setRenderHint(QtGui.QPainter.RenderHint.Antialiasing)
 
         x, y = tuple(self.parent.states['coordinate'])
         pen = QtGui.QPen(self._border_color)
@@ -129,6 +128,6 @@ class Port(QtWidgets.QGraphicsItem, CorePort):
         font = QtGui.QFont('Helvetica', 8)
         painter.setFont(font)
         if self._dir == "sink":
-            painter.drawText(QtCore.QRectF(-max(0, self.width - 15), 0, self.width, 15), Qt.AlignCenter, self.name)
+            painter.drawText(QtCore.QRectF(-max(0, self.width - 15), 0, self.width, 15), Qt.AlignmentFlag.AlignCenter, self.name)
         else:
-            painter.drawText(QtCore.QRectF(0, 0, self.width, 15), Qt.AlignCenter, self.name)
+            painter.drawText(QtCore.QRectF(0, 0, self.width, 15), Qt.AlignmentFlag.AlignCenter, self.name)

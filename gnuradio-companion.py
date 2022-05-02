@@ -22,7 +22,7 @@ See https://wiki.gnuradio.org/index.php/ModuleNotFoundError
 """
 
 
-def die(error, message):
+def die(error, message):              #todo : make GI independent. Will not exist
     msg = "{0}\n\n({1})".format(message, error)
     try:
         import gi
@@ -46,33 +46,13 @@ def die(error, message):
         print("The original error message follows.", file=sys.stderr)
         sys.exit(type(error).__name__ + '\n\n' + msg)
 
-
-def check_gtk():
-    try:
-        import gi
-        gi.require_version('Gtk', '3.0')
-        gi.require_version('PangoCairo', '1.0')
-        gi.require_foreign('cairo', 'Context')
-
-        from gi.repository import Gtk
-        success = Gtk.init_check()[0]
-        if not success:
-            # Don't display a warning dialogue. This seems to be a Gtk bug. If it
-            # still can display warning dialogues, it does probably work!
-            print(
-                "Gtk init_check failed. GRC might not be able to start a GUI.",
-                file=sys.stderr)
-
-    except Exception as err:
-        die(err, "Failed to initialize GTK. If you are running over ssh, "
-                 "did you enable X forwarding and start ssh with -X?")
-
+        
 
 def check_gnuradio_import():
     try:
         from gnuradio import gr
     except ImportError as err:
-        die(err, GR_IMPORT_ERROR_MESSAGE)
+         print ("Cannot find GNU Radio! (Have you sourced the environment file?)", file=sys.stderr)
 
 
 def check_blocks_path():
@@ -96,7 +76,6 @@ def run_main():
 
 
 if __name__ == '__main__':
-    check_gnuradio_import()
-    #check_gtk()
+    #check_gnuradio_import()
     check_blocks_path()
     run_main()

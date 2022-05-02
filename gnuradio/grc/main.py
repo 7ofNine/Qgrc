@@ -34,7 +34,6 @@ LOG_LEVELS = {
 }
 
 ### Load GNU Radio
-# Do this globally so it is available for both run_gtk() and run_qt()
 try:
     from gnuradio import gr
 except ImportError as ex:
@@ -58,10 +57,9 @@ except ImportError as ex:
 
 
 ### Enable Logging
-# Do this globally so it is available for both run_gtk() and run_qt()
 # TODO: Advanced logging - https://docs.python.org/3/howto/logging-cookbook.html#formatting-styles
 # Note: All other modules need to use the 'grc.<module>' convention
-log = logging.getLogger('grc')
+log = logging.getLogger('gnuradio.grc')   # possibly needed for this project. Needs more investigation
 # Set the root log name
 # Since other files are in the 'grc' module, they automatically get a child logger when using:
 #   log = logging.getLogger(__name__)
@@ -71,33 +69,6 @@ log = logging.getLogger('grc')
 log.setLevel(logging.DEBUG)
 
 
-#def run_gtk(args, log):
-#    ''' Runs the GTK version of GNU Radio Companion '''
-
-#    import gi
-#    gi.require_version('Gtk', '3.0')
-#    gi.require_version('PangoCairo', '1.0')
-#    from gi.repository import Gtk
-
-#    # Delay importing until the logging is setup
-#    from .gui.Platform import Platform
-#    from .gui.Application import Application
-
-#    # The platform is loaded differently between QT and GTK, so this is required both places
-#    log.debug("Loading platform")
-#    platform = Platform(
-#        version=gr.version(),
-#        version_parts=(gr.major_version(), gr.api_version(),
-#                       gr.minor_version()),
-#        prefs=gr.prefs(),
-#        install_prefix=gr.prefix()
-#    )
-#    platform.build_library()
-
-#    log.debug("Loading application")
-#    app = Application(args.flow_graphs, platform)
-#    log.debug("Running")
-#    sys.exit(app.run())
 
 
 def run_qt(args, log):
@@ -205,16 +176,6 @@ def main():
     parser.add_argument('--log', choices=['debug', 'info', 'warning', 'error', 'critical'], default='debug')
     # TODO: parser.add_argument('--log-output')
 
-    # Graphics framework (QT or GTK). This version only suppports Qt6
-    #gui_group = parser.add_argument_group('Framework')
-    #gui_group_exclusive = gui_group.add_mutually_exclusive_group()
-    #gui_group_exclusive.add_argument("--qt", dest='framework', action='store_const', const='qt',
-    #                                 help="GNU Radio Companion (QT)")
-    #gui_group_exclusive.add_argument("--gtk", dest='framework', action='store_const', const='gtk',
-    #                                 help="GNU Radio Companion (GTK)")
-
-    ## Default options if not already set with add_argument()
-    #parser.set_defaults(framework='gtk')
     args = parser.parse_args()
 
 
@@ -236,9 +197,4 @@ def main():
     py_version = str(sys.version_info.major) + "." + str(sys.version_info.minor) + "." + str(sys.version_info.micro)
     log.info("Starting GNU Radio Companion {} (Python {})".format(gr.version(), py_version))
 
-
-    ### GUI Framework
- #   if args.framework == 'qt':
     run_qt(args, log)
- #   else:
- #       run_gtk(args, log)

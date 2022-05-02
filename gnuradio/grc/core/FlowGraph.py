@@ -36,6 +36,7 @@ class FlowGraph(Element):
         Returns:
             the flow graph object
         """
+        log.debug("Initializing FlowGraph")
         Element.__init__(self, parent)
         self.options_block = self.parent_platform.make_block(self, 'options')
 
@@ -219,7 +220,7 @@ class FlowGraph(Element):
         elements.extend(self.connections)
         return elements
 
-    def children(self):
+    def grchildren(self):
         return itertools.chain(self.blocks, self.connections)
 
     def rewrite(self):

@@ -130,7 +130,7 @@ class MainWindow(QtWidgets.QMainWindow, base.Component):
         log.debug("Loading flowgraph model")
         self.fg_view = FlowgraphView(self)
         initial_state = self.platform.parse_flow_graph("")
-#        self.fg_view.flowgraph.import_data(initial_state)   #only temporary disabled
+        self.fg_view.flowgraph.import_data(initial_state)   
         log.debug("Adding flowgraph view")
         self.tabWidget = QtWidgets.QTabWidget()
         self.tabWidget.setTabsClosable(True)
@@ -520,7 +520,7 @@ class MainWindow(QtWidgets.QMainWindow, base.Component):
 
     # Action Handlers
     def new_triggered(self):
-        log.debug('new file')
+        log.debug('new file: not implemented, yet')
 
     def open_triggered(self):
         log.debug('open')
@@ -560,13 +560,13 @@ class MainWindow(QtWidgets.QMainWindow, base.Component):
             self.tabWidget.removeTab(tab_index)
 
     def close_all_triggered(self):
-        log.debug('close')
+        log.debug('close all: not implemented, yet')
 
     def print_triggered(self):
-        log.debug('print')
+        log.debug('print: not implemented,yet')
 
     def screen_capture_triggered(self):
-        log.debug('screen capture')
+        log.debug('screen capture: not implemented, yet')
 
     def undo_triggered(self):
         log.debug('undo')
@@ -579,13 +579,13 @@ class MainWindow(QtWidgets.QMainWindow, base.Component):
         self.updateActions()
 
     def cut_triggered(self):
-        log.debug('cut')
+        log.debug('cut: not implemented, yet')
 
     def copy_triggered(self):
-        log.debug('copy')
+        log.debug('copy: not implemented, yet')
 
     def paste_triggered(self):
-        log.debug('paste')
+        log.debug('paste: not implemented, yet')
 
     def delete_triggered(self):
         log.debug('delete')
@@ -651,7 +651,7 @@ class MainWindow(QtWidgets.QMainWindow, base.Component):
         log.debug('preferences')
 
     def exit_triggered(self):
-        log.debug('exit')
+        log.debug('exit: save not implemented, yet')
         # TODO: Make sure all flowgraphs have been saved
         self.app.exit()
 
@@ -707,3 +707,11 @@ class MainWindow(QtWidgets.QMainWindow, base.Component):
     def toggle_sink_bus_triggered(self):
         log.warning('toggle sink bus')
 
+    def about(self):
+        log.debug('about method not implemented, yet')
+
+    def types(self):
+        log.debug('types() method not implemented, yet')
+
+    def help(self):
+        log.debug('help not implemented, yet')

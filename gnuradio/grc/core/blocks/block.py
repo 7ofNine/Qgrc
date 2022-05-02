@@ -615,7 +615,7 @@ class Block(Element):
     def active_ports(self):
         return itertools.chain(self.active_sources, self.active_sinks)
 
-    def children(self):
+    def grchildren(self):
         return itertools.chain(self.params.values(), self.ports())
 
     ##############################################
