@@ -47,7 +47,7 @@ QStyle = QtWidgets.QStyle
 
 
 class MainWindow(QtWidgets.QMainWindow, base.Component):
-
+    
     def __init__(self):
         QtWidgets.QMainWindow.__init__(self)
         base.Component.__init__(self)
@@ -127,13 +127,16 @@ class MainWindow(QtWidgets.QMainWindow, base.Component):
         self.registerToolBar(toolbars["edit"])
         self.registerToolBar(toolbars["run"])
 
+        self.tabWidget = self.createTabWidget()
+
+
         log.debug("Loading flowgraph model")
         self.fg_view = FlowgraphView(self)
         initial_state = self.platform.parse_flow_graph("")
         self.fg_view.flowgraph.import_data(initial_state)   
         log.debug("Adding flowgraph view")
-        self.tabWidget = QtWidgets.QTabWidget()
-        self.tabWidget.setTabsClosable(True)
+        #self.tabWidget = QtWidgets.QTabWidget()
+        #self.tabWidget.setTabsClosable(True)
         #TODO: Don't close if the tab has not been saved
         self.tabWidget.tabCloseRequested.connect(lambda index: self.close_triggered(index))
         self.tabWidget.addTab(self.fg_view, "Untitled")
@@ -145,6 +148,14 @@ class MainWindow(QtWidgets.QMainWindow, base.Component):
         log.debug("Showing main window")
         self.show()
     '''
+    def createTabWidget(self):
+        tabWidget = QtWidgets.QTabWidget()
+        tabWidget.setTabsClosable(True)
+        tabWidget.setTabBarAutoHide(True)
+        tabWidget.setElideMode(QtCore.Qt.TextElideMode.ElideLeft)
+
+        return tabWidget
+
 
     @property
     def currentView(self):

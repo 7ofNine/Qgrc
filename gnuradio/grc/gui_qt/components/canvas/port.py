@@ -38,13 +38,13 @@ class Port(QtWidgets.QGraphicsItem, CorePort):
         #CorePort.__init__(self, parent, direction, **n)
         QtWidgets.QGraphicsItem.__init__(self)
         self.y_offset = 0
-        self.height = 15.0
+        self.height = 15.0  
         self.width = 15.0
 
         if self._dir == "sink":
-            self.connection_point = self.scenePos() + QtCore.QPointF(0.0, self.height / 2.0)
+            self.connection_point = QtCore.QPointF(0.0, self.height / 2.0)
         else:
-            self.connection_point = self.scenePos() + QtCore.QPointF(15.0, self.height / 2.0)
+            self.connection_point = QtCore.QPointF(15.0, self.height / 2.0)
 
         self.setFlag(QtWidgets.QGraphicsItem.GraphicsItemFlag.ItemSendsScenePositionChanges)
 
@@ -63,7 +63,7 @@ class Port(QtWidgets.QGraphicsItem, CorePort):
     def create_shapes(self):
         """Create new areas and labels for the port."""
         fm = QtGui.QFontMetrics(QtGui.QFont('Helvetica', 8))
-        self.width = max(15, fm.horizontalAdvance(self.name) * 1.5)
+        self.width = max(15.0, fm.horizontalAdvance(self.name) * 1.5)
 
     def create_labels(self, cr=None):
         """Create the labels for the socket."""
@@ -104,6 +104,9 @@ class Port(QtWidgets.QGraphicsItem, CorePort):
             return QtCore.QRectF(-max(0, self.width - 15), 0, self.width, 15) # same as the rectangle we draw, but with a 0.5*pen width margin
         else:
             return QtCore.QRectF(0, 0, self.width, 15) # same as the rectangle we draw, but with a 0.5*pen width margin
+
+    def getConnectionPoint(self):
+        return self.mapToScene(self.connection_point)
 
     def paint(self, painter, option, widget):
         """
