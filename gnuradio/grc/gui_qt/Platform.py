@@ -13,8 +13,8 @@ import os
 from collections import ChainMap
 
 from .Config import Config
-from .components.flowgraph import Flowgraph
-from .components import canvas
+from .components.canvas.flowgraphscene import FlowgraphScene
+#from .components import canvas
 from .components.canvas.block import Block
 from .components.canvas.port import Port
 from .components.canvas.connection import Connection
@@ -53,7 +53,7 @@ class Platform(CorePlatform):
     # Factories
     ##############################################
     Config = Config
-    FlowGraph = Flowgraph
+    FlowGraphScene = FlowgraphScene
     Connection = Connection
 
     def new_block_class(self, **data):

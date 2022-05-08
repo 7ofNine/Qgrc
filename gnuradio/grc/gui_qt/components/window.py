@@ -131,12 +131,10 @@ class MainWindow(QtWidgets.QMainWindow, base.Component):
 
 
         log.debug("Loading flowgraph model")
-        self.fg_view = FlowgraphView(self)
-        initial_state = self.platform.parse_flow_graph("")
-        self.fg_view.flowgraph.import_data(initial_state)   
-        log.debug("Adding flowgraph view")
-        #self.tabWidget = QtWidgets.QTabWidget()
-        #self.tabWidget.setTabsClosable(True)
+        self.fg_view = FlowgraphView(self)                         # introduce better logical structure. Who should load the data. Scene -> update View. Or the view?                                     
+        initial_state = self.platform.parse_flow_graph("")         # the core platform parses
+        self.fg_view.flowgraphScene.import_data(initial_state)          # the flowgraphscene actually inports which is imediately forwarded to the core flowgraph and then all blocks are added to the scene. What about the connections??
+        log.debug("Adding flowgraph view")                         
         #TODO: Don't close if the tab has not been saved
         self.tabWidget.tabCloseRequested.connect(lambda index: self.close_triggered(index))
         self.tabWidget.addTab(self.fg_view, "Untitled")
@@ -163,7 +161,7 @@ class MainWindow(QtWidgets.QMainWindow, base.Component):
 
     @property
     def currentFlowgraph(self):
-        return self.tabWidget.currentWidget().flowgraph
+        return self.tabWidget.currentWidget().flowgraphScene
 
     def createActions(self, actions):
         '''
@@ -534,7 +532,7 @@ class MainWindow(QtWidgets.QMainWindow, base.Component):
         log.debug('new file: not implemented, yet')
 
     def open_triggered(self):
-        log.debug('open')
+        log.debug('open triggered')
         filename = self.open()
 
         if filename:
@@ -562,12 +560,12 @@ class MainWindow(QtWidgets.QMainWindow, base.Component):
 
         log.info(filename)
 
-    def close_triggered(self, tab_index=None):
-        log.debug('close')
+    def close_triggered(self, tab_index=None):           # tab is being closed
+        log.debug('close a tab')
         if tab_index is None:
-            self.tabWidget.removeTab(self.tabWidget.currentIndex())
+            self.tabWidget.removeTab(self.tabWidget.currentIndex())   # when would that happen ?
         else:
-            # TODO: Only if saved
+            # TODO: Only if saved            i.e. keep a changed to be saved status flag for saving to *.grc file 
             self.tabWidget.removeTab(tab_index)
 
     def close_all_triggered(self):

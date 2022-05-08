@@ -66,7 +66,6 @@ class Connection(CoreConnection, QtWidgets.QGraphicsPathItem):
         self._path.addPath(self._line)
         self._path.addPath(self._arrowhead)
         self.setPath(self._path)
-        #self.setPath(self._line)
 
     def paint(self, painter, option, widget):
 
@@ -96,7 +95,7 @@ class Connection(CoreConnection, QtWidgets.QGraphicsPathItem):
         else:
             painter.setBrush(QtGui.QColor(0x61, 0x61, 0x61))
 
-        #painter.drawPath(self._arrowhead)
+        painter.drawPath(self._arrowhead)
 
     def mouseDoubleClickEvent(self, e):
         self.parent.connections.remove(self)

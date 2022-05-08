@@ -21,8 +21,13 @@ import logging
 from PyQt6 import QtGui, QtCore, QtWidgets
 from PyQt6.QtCore import Qt
 
-from ... import base
+from itertools import count
+
+from ....core.base import Element
+from ... import base 
+from .connection import Connection
 from ....core.FlowGraph import FlowGraph as CoreFlowgraph
+from ..undoable_actions import MoveCommand
 
 
 
@@ -217,7 +222,7 @@ class FlowgraphScene(QtWidgets.QGraphicsScene, base.Component, CoreFlowgraph):
                 print("clicked a port")
         if event.button() == Qt.MouseButton.LeftButton:
             self.mousePressed = True
-            super(Flowgraph, self).mousePressEvent(event)
+            super(FlowgraphScene, self).mousePressEvent(event)
 
     def mouseMoveEvent(self, event):
         if self.newConnection:
@@ -238,7 +243,7 @@ class FlowgraphScene(QtWidgets.QGraphicsScene, base.Component, CoreFlowgraph):
                 #~ print itemUnderMouse
                 pass
 
-            super(Flowgraph, self).mouseMoveEvent(event)
+            super(FlowgraphScene, self).mouseMoveEvent(event)
 
     def mouseReleaseEvent(self, event):
         if self.newConnection:
@@ -261,10 +266,10 @@ class FlowgraphScene(QtWidgets.QGraphicsScene, base.Component, CoreFlowgraph):
                 #self.setCursor(Qt.CursorShape.ArrowCursor)
             self.mousePressed = False
         '''
-        super(Flowgraph, self).mouseReleaseEvent(event)
+        super(FlowgraphScene, self).mouseReleaseEvent(event)
 
     def mouseDoubleClickEvent(self, event): # Will be used to open up dialog box of a block
-        super(Flowgraph, self).mouseDoubleClickEvent(event)
+        super(FlowgraphScene, self).mouseDoubleClickEvent(event)
 
 
 
@@ -288,7 +293,7 @@ class FlowgraphScene(QtWidgets.QGraphicsScene, base.Component, CoreFlowgraph):
 
 
     def import_data(self, data):
-        super(Flowgraph, self).import_data(data)
+        super(FlowgraphScene, self).import_data(data)
         for block in self.blocks:
             self.addItem(block)
 
@@ -300,5 +305,5 @@ class FlowgraphScene(QtWidgets.QGraphicsScene, base.Component, CoreFlowgraph):
 
     def remove_element(self, element):
         self.removeItem(element)
-        super(Flowgraph, self).remove_element(element)
+        super(FlowgraphScene, self).remove_element(element)
 

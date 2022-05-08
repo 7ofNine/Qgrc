@@ -22,10 +22,14 @@ from PyQt6 import QtGui, QtCore, QtWidgets
 from PyQt6.QtCore import Qt
 
 from .. import base
-from .canvas.flowgraphscene import FlowgraphScene
+from .canvas import FlowgraphScene 
 
 
-log = logging.get_logger(__name__)
+log = logging.getLogger(__name__)
+
+DEFAULT_MAX_X = 1280   # how does this relate to the FlowgraphScene ?
+DEFAULT_MAX_Y = 1024
+
 
 class FlowgraphView(QtWidgets.QGraphicsView, base.Component): # added base.Component so it can see platform
     def __init__(self, parent, filename=None):
@@ -33,7 +37,7 @@ class FlowgraphView(QtWidgets.QGraphicsView, base.Component): # added base.Compo
         self.setParent(parent)
         self.setAlignment(Qt.AlignmentFlag.AlignLeft|Qt.AlignmentFlag.AlignTop)
 
-        self.flowgraphscene = FlowgraphScene()
+        self.flowgraphScene = FlowgraphScene()
         self.scalefactor = 1.0
 
         #if filename is not None:
@@ -41,7 +45,7 @@ class FlowgraphView(QtWidgets.QGraphicsView, base.Component): # added base.Compo
         #else:
         self.initEmpty()
 
-        self.setScene(self.flowgraphscene)
+        self.setScene(self.flowgraphScene)
         
         self.setBackgroundBrush(QtGui.QBrush(Qt.GlobalColor.white))
 
