@@ -446,7 +446,7 @@ class FlowGraph(Element):
 
             block.import_data(**block_data)
 
-        self.rewrite()              # setup parameters ?
+        self.rewrite()              # setup parameters ? what does that actually do
 
         # build the connections
         def verify_and_get_port(key, block, dir):

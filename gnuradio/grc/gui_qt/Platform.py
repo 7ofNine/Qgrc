@@ -60,9 +60,12 @@ class Platform(CorePlatform):
         cls = CorePlatform.new_block_class(self, **data)
         return Block.make_cls_with_base(cls)
 
-    block_classes_build_in = {key: Block.make_cls_with_base(cls)
+    block_classes_build_in = {key: Block.make_cls_with_base(cls)                            # pull build_in_blocks from core to gui
                               for key, cls in CorePlatform.block_classes_build_in.items()}
     block_classes = ChainMap({}, block_classes_build_in)
+
+    #cls = block_classes['_dummy']   # for test only
+    #check =cls(parent=None)         # for test only. fials 
 
     port_classes = {key: Port.make_cls_with_base(cls)
                     for key, cls in CorePlatform.port_classes.items()}

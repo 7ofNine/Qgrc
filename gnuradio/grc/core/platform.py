@@ -23,7 +23,7 @@ from .base import Element
 from .io import yaml
 from .generator import Generator
 from .FlowGraph import FlowGraph
-from .Connection import Connection
+from .connection import Connection
 
 logger = logging.getLogger(__name__)
 

@@ -17,6 +17,7 @@
 
 # Third-party modules
 import logging
+import datetime;
 
 from PyQt6 import QtGui, QtCore, QtWidgets
 from PyQt6.QtCore import Qt
@@ -124,7 +125,8 @@ class FlowgraphView(QtWidgets.QGraphicsView, base.Component): # added base.Compo
     #    #self.fitInView(bounds)
 
     def initEmpty(self):
-        self.setSceneRect(0,0,DEFAULT_MAX_X, DEFAULT_MAX_Y)
+        pass 
+        #self.setSceneRect(0,0,DEFAULT_MAX_X, DEFAULT_MAX_Y)
 
 
 
@@ -156,6 +158,7 @@ class FlowgraphView(QtWidgets.QGraphicsView, base.Component): # added base.Compo
 
     def mousePressEvent(self,  event):
         if event.button() == Qt.MouseButton.LeftButton:
+            log.debug("mouse pressed view")
             self.mousePressed = True
             # This will pass the mouse move event to the scene
             super(FlowgraphView, self).mousePressEvent(event)
@@ -169,10 +172,16 @@ class FlowgraphView(QtWidgets.QGraphicsView, base.Component): # added base.Compo
             self.verticalScrollBar().setValue(self.verticalScrollBar().value() - diff.y())
             event.accept()
         else:
+            ts = datetime.datetime.now().timestamp()
+            log.debug("mouse moved view {}".format(ts))
+
             # This will pass the mouse move event to the scene
             super(FlowgraphView, self).mouseMoveEvent(event)
 
     def mouseReleaseEvent(self, event):
+        ts = datetime.datetime.now().timestamp()
+        log.debug("mouse released view {}".format(ts))
+
         if event.button() == Qt.MouseButton.LeftButton:
             self.mousePressed = False
         super(FlowgraphView, self).mouseReleaseEvent(event)

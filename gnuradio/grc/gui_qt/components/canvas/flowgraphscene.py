@@ -17,6 +17,7 @@
 
 # Third-party modules
 import logging
+import datetime
 
 from PyQt6 import QtGui, QtCore, QtWidgets
 from PyQt6.QtCore import Qt
@@ -65,6 +66,7 @@ class FlowgraphScene(QtWidgets.QGraphicsScene, base.Component, CoreFlowgraph):
         #self.create_shapes()
 
     def dragEnterEvent(self, event):
+        log.debug("drop enter")
         if event.mimeData().hasUrls:
             event.setDropAction(Qt.DropAction.CopyAction)
             event.accept()
@@ -72,6 +74,7 @@ class FlowgraphScene(QtWidgets.QGraphicsScene, base.Component, CoreFlowgraph):
             event.ignore()
 
     def dragMoveEvent(self, event):
+        log.debug("drag move")
         if event.mimeData().hasUrls:
             event.setDropAction(Qt.DropAction.CopyAction)
             event.accept()
@@ -112,6 +115,7 @@ class FlowgraphScene(QtWidgets.QGraphicsScene, base.Component, CoreFlowgraph):
         return block_id
 
     def dropEvent(self, event):
+        log.debug("scene: dropEvent")
         QtWidgets.QGraphicsScene.dropEvent(self, event)
         if event.mimeData().hasUrls:
             data = event.mimeData()
@@ -135,12 +139,12 @@ class FlowgraphScene(QtWidgets.QGraphicsScene, base.Component, CoreFlowgraph):
                         params.append((key, value))
 
                 # Tell the block where to show up on the canvas
-                attrib = {'_coordinate':(cursor_pos.x(), cursor_pos.y())}
-
+                #attrib = {'coordinate':(cursor_pos.x(), cursor_pos.y())}
+                coordinates = [cursor_pos.x(),cursor_pos.y()]
                 id = self._get_unique_id(block_key)
                 
-                block = self.new_block(block_key, attrib=attrib)
-                block.states['coordinate'] = attrib['_coordinate']
+                block = self.new_block(block_key)
+                block.states['coordinate'] = coordinates
                 block.setPos(cursor_pos.x(), cursor_pos.y())
                 block.params['id'].set_value(id)
                 self.addItem(block)
@@ -197,11 +201,14 @@ class FlowgraphScene(QtWidgets.QGraphicsScene, base.Component, CoreFlowgraph):
     def registerBlockMovement(self, clicked_block):
         # We need to pass the clicked block here because
         # it hasn't been registered as selected yet
+        log.debug("register block move scene")
         for block in self.selected_blocks() + [clicked_block]:
             block.registerMoveStarting()
 
     def registerMoveCommand(self, block):
-        log.debug('move_cmd')
+        log.debug("register move command scene")
+        ts = datetime.datetime.now().timestamp()
+        log.debug('fr{} move_cmd '.format(ts))
         for block in self.selected_blocks():
             block.registerMoveEnding()
         moveCommand = MoveCommand(self, self.selected_blocks())
@@ -209,11 +216,12 @@ class FlowgraphScene(QtWidgets.QGraphicsScene, base.Component, CoreFlowgraph):
         self.app.MainWindow.updateActions()
 
     def mousePressEvent(self,  event):
+        log.debug("mouse pressed scene")
         item = self.itemAt(event.scenePos(), QtGui.QTransform())
         if item:
             if item.is_port:
                 self.startPort = item
-                log.debug("ouse start: " +str(event.scenePos()))
+                log.debug("mouse start: " +str(event.scenePos()))
                 self.newConnection = QtWidgets.QGraphicsLineItem(QtCore.QLineF(event.scenePos(), event.scenePos()))
                 linePen = QtGui.QPen(QtCore.Qt.PenStyle.DotLine)
                 linePen.setColor(QtGui.QColor(255,0,0)) #temporary
@@ -221,10 +229,14 @@ class FlowgraphScene(QtWidgets.QGraphicsScene, base.Component, CoreFlowgraph):
                 self.addItem(self.newConnection)
                 print("clicked a port")
         if event.button() == Qt.MouseButton.LeftButton:
+            log.debug("mouse pressed forwarded scene")
             self.mousePressed = True
             super(FlowgraphScene, self).mousePressEvent(event)
 
     def mouseMoveEvent(self, event):
+        ts = datetime.datetime.now().timestamp()
+        log.debug('mouse moved scene {}'.format(ts))
+
         if self.newConnection:
             log.debug("move end point: " + str(event.scenePos()))
             newConnection_ = QtCore.QLineF(self.newConnection.line().p1(), event.scenePos())
@@ -246,6 +258,7 @@ class FlowgraphScene(QtWidgets.QGraphicsScene, base.Component, CoreFlowgraph):
             super(FlowgraphScene, self).mouseMoveEvent(event)
 
     def mouseReleaseEvent(self, event):
+        log.debug("mouse released scene")
         if self.newConnection:
             item = self.itemAt(event.scenePos(), QtGui.QTransform())
             if isinstance(item, Element):
@@ -295,7 +308,8 @@ class FlowgraphScene(QtWidgets.QGraphicsScene, base.Component, CoreFlowgraph):
     def import_data(self, data):
         super(FlowgraphScene, self).import_data(data)
         for block in self.blocks:
-            self.addItem(block)
+            self.addItem(block) 
+        # where are the connections
 
     def getMaxZValue(self):
         z_values = []

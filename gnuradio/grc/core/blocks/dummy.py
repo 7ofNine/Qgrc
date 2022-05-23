@@ -40,8 +40,11 @@ class DummyBlock(Block):
         port = self.parent_platform.make_port(
             parent=self, direction=direction, id=port_id, name='?', dtype='',
         )
+        port.setParentItem(self)    #add port as child to the block
         if port.is_source:
+            port.setPos(self.width + 2.0, self.height/2.0 - port.height/2.0)   #3.0 is the pen width of block border, should be a constant. what about multiple ports? where to put this. This is visual not core port
             self.sources.append(port)
         else:
+            port.setPos(-(port.width + 2.0), self.height/2.0 - port.height/2.0)
             self.sinks.append(port)
         return port

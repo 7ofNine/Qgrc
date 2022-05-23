@@ -19,7 +19,7 @@ from ..Constants import (
     GR_MESSAGE_DOMAIN,
     LINE_SELECT_SENSITIVITY,
 )
-from ...core.Connection import Connection as CoreConnection
+from ...core.connection import Connection as CoreConnection
 from ...core.utils.descriptors import nop_write
 
 

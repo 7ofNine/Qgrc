@@ -22,7 +22,7 @@ def build(id, label='', category='', flags='', documentation='',
           parameters=None, inputs=None, outputs=None, templates=None, cpp_templates=None, **kwargs):
     block_id = id
 
-    cls = type(str(block_id), (Block,), {})
+    cls = type(str(block_id), (Block,), {})  # create class with name block_id and base core.blocks.block
     cls.key = block_id
 
     cls.label = label or block_id.title()

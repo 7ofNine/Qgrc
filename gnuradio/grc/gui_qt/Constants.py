@@ -50,6 +50,9 @@ PORT_LABEL_PADDING = 2
 # canvas grid size
 CANVAS_GRID_SIZE = 8
 
+# block descriptions
+BLOCK_BORDER_WIDTH = 2
+
 # port constraint dimensions
 PORT_BORDER_SEPARATION = 8
 PORT_SPACING = 2 * PORT_BORDER_SEPARATION
@@ -58,6 +61,9 @@ PORT_SEPARATION = 32
 PORT_MIN_WIDTH = 20
 PORT_LABEL_HIDDEN_WIDTH = 10
 PORT_EXTRA_BUS_HEIGHT = 40
+
+# thickness of connection line between ports
+CONNECTOR_LINE_WIDTH = 2
 
 # minimal length of connector
 CONNECTOR_EXTENSION_MINIMAL = 11

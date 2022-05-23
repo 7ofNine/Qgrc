@@ -178,6 +178,8 @@ class Port(Element):
         # Add index to master port name if there are no clones yet
         if not self.clones:
             self.name = self._base_name + '0'
+            self.create_shapes()  # update the port length. Should we do that cleaner, e.g. create ports and after all that give them their names and determine the shape?
+                                  # would be a clean separation.  
             # Also update key for none stream ports
             if not self.key.isdigit():
                 self.key = self.name

@@ -1,4 +1,6 @@
+from asyncio import constants
 import logging
+import datetime
 
 # third-party modules
 from PyQt6 import QtGui, QtCore, QtWidgets
@@ -212,16 +214,19 @@ class Block(QtWidgets.QGraphicsItem, CoreBlock):
         namespace = cls.__dict__.copy()
         return type(name, bases, namespace)
 
-    def create_shapes_and_labels(self):
+    def create_shapes_and_labels(self):                       # erroneous. we have to create ports first before we can determine the size of the block and not rely on the existence of the port height!!
+        log.debug("block {}: create_shapes_and_labels".format(self.key))
         self.prepareGeometryChange()
 
         # figure out height of block based on how many params there are
         i = 30.0
-
-        for key, item in self.params.items():
-            value = item.value
-            if value is not None and item.hide == 'none':
-                i+= 20.0
+        if self.is_dummy_block: #has predetermined number of lines. SHould be a constant
+            i = 50.0
+        else:
+            for key, item in self.params.items():
+                value = item.value
+                if value is not None and item.hide == 'none':    # hide determines if the attribute is shown in the graphic representation. defined in corresponding *.yml file
+                    i+= 20.0
 
         self.height = i
 
@@ -239,26 +244,35 @@ class Block(QtWidgets.QGraphicsItem, CoreBlock):
             return min_height
 
         self.height = max(self.height,
-                     get_min_height_for_ports(self.active_sinks),
+                     get_min_height_for_ports(self.active_sinks),                  # what is an active sink/source vs. a sink/source?
                      get_min_height_for_ports(self.active_sources))
 
-        # figure out width of block based on widest line of text
+        # figure out width of block based on widest line of text                   # probaably can be combined with the height determination. single methods?
         labelFont, labelFontMetric = self.getLabelFont()
         largest_width = labelFontMetric.horizontalAdvance(self.label)   # length of the label
 
         nameFont, nameFontMetric = self.getNameFont() #should be calculated in a single location not twice! Define Constants for GUI. Configurable??
         valueFont, valueFontMetric = self.getValueFont()
 
-        for key, item in self.params.items():
-            name = item.name
-            value = item.value
-            value_label = item.options[value] if value in item.options else value
-            if value is not None and item.hide == 'none':
-                full_line_length = nameFontMetric.horizontalAdvance(name + ": ") + valueFontMetric.horizontalAdvance(value_label)
-                if full_line_length > largest_width:
-                    largest_width = float(full_line_length)
+        if self.is_dummy_block:          # has only two lines
+            name = 'key'
+            value_label = self.key
+            labelWidth = nameFontMetric.horizontalAdvance(self.label)
+            full_line_length = nameFontMetric.horizontalAdvance(name + ": ") + valueFontMetric.horizontalAdvance(value_label)
+            largest_width = max(labelWidth, full_line_length)
+
+        else:
+            for key, item in self.params.items():
+                name = item.name
+                value = item.value
+                value_label = item.options[value] if value in item.options else value
+                if value is not None and item.hide == 'none':
+                    full_line_length = nameFontMetric.horizontalAdvance(name + ": ") + valueFontMetric.horizontalAdvance(value_label)
+                    if full_line_length > largest_width:
+                        largest_width = float(full_line_length)
 
         self.width = largest_width + 15.0
+        log.debug("block {} height = {}, width = {}".format(self.key, self.height, self.width))
 
         bussified = self.current_bus_structure['source'], self.current_bus_structure['sink']
         for ports, has_busses in zip((self.active_sources, self.active_sinks), bussified):
@@ -268,12 +282,14 @@ class Block(QtWidgets.QGraphicsItem, CoreBlock):
             offset = (self.height - (len(ports) - 1) * port_separation - ports[0].height) / 2
             for port in ports:
                 if port._dir == "sink":
-                    port.setPos(-15.0, offset)
+                    port.setPos(-15.0, offset)                      # is the position dependent on the size of the port??? Is that correct?
                 else:
-                    port.setPos(self.width, offset)
-                port.create_shapes_and_labels()
+                    port.setPos(self.width, offset)                 # position with relation to its parents coordinates. Done in __init__
+                
+                log.debug("{} relative block position {}".format(port._dir, port.pos()))
+                port.create_shapes_and_labels()                     # where are the ports created?. see above
                 '''
-                port.coordinate = {
+                port.coordinate = {                                 # changes needed for rotation. Not implemented yet
                     0: (+self.width, offset),
                     90: (offset, -port.width),
                     180: (-port.width, offset),
@@ -285,13 +301,15 @@ class Block(QtWidgets.QGraphicsItem, CoreBlock):
 
         self._update_colors()
         self.create_port_labels()
-        self.setTransformOriginPoint(self.width / 2, self.height / 2)
+        self.setTransformOriginPoint(self.width / 2, self.height / 2)   # set the origin for transformations. upper right corner?
+
 
     def create_port_labels(self):
+        log.debug("block {}: create_port_labels".format(self.key))
         for ports in (self.active_sinks, self.active_sources):
             max_width = 0
             for port in ports:
-                port.create_shapes_and_labels()
+                port.create_shapes_and_labels() # actually ony selects colour
                 #max_width = max(max_width, port.width_with_label)
             #for port in ports:
             #    port.width = max_width
@@ -299,12 +317,15 @@ class Block(QtWidgets.QGraphicsItem, CoreBlock):
 
     #def __init__(self, block_key, block_label, attrib, params, parent):
     def __init__(self, parent, **n):
-        #super(self.__class__, self).__init__(parent, **n)
-        CoreBlock.__init__(self, parent)
+        log.debug("block {}: create".format(self.key))
+        super(self.__class__, self).__init__(parent, **n) 
+        
+        #CoreBlock.__init__(self, parent)      # this fails with build-in blocks. Is there a way?
         QtWidgets.QGraphicsItem.__init__(self)
+        
 
-        for sink in self.sinks:
-            sink.setParentItem(self)
+        for sink in self.sinks:                    # the ports are created in core.block via platform.make_port. What are different port classes? are they actually used??
+            sink.setParentItem(self)               # make block parent of the ports. important for coordinates
         for source in self.sources:
             source.setParentItem(self)
 
@@ -316,19 +337,19 @@ class Block(QtWidgets.QGraphicsItem, CoreBlock):
         #self.x = 500
         #self.y = 300
         try:
-            self.coordinate = tuple(self.states['coordinate'])
+            self.coordinate = tuple(self.states['coordinate'])                         # this is useless. states does not have coordinate set, yet
         except KeyError:
             self.coordinate = (500,300)
-        self.width = 300.0 # default shouldnt matter, it will change immedaitely after the first paint
+        self.width = 300.0 # default shouldnt matter, it will change immedaitely after the first paint. also useless. why is it even set?
         #self.block_key = block_key
         #self.block_label = block_label
-        self.block_label = self.key
+        self.block_label = self.key   # what is this good for??
 
 
         x,y = self.coordinate
-        self.setPos(x, y)
+        self.setPos(x, y)                                     # dummy position. Do we really need this? where is the actual position loaded from *.grc file?
 
-        self.create_shapes_and_labels()
+        self.create_shapes_and_labels()   # shouldn't that be done before setting the position
 
         self.moving = False
         self.movingFrom = None
@@ -386,10 +407,14 @@ class Block(QtWidgets.QGraphicsItem, CoreBlock):
         return font, fm
 
 
-    def paint(self, painter, option, widget):
-        x,y = (self.x(), self.y())
-        self.states['coordinate'] = (x,y)
-        
+    def paint(self, painter, option, widget):                     #painting the ports is managed by the scene not by the port. the port is a child of block
+        ts = datetime.datetime.now().timestamp()
+        log.debug("paint block {}".format(self.name))
+
+        #log.debug("block {}: paint  ".format(self.name))
+        x,y = (self.x(), self.y())                                #where has x,y been set?somewhere when loading *grc. Why are there so many versions of the coordinates ahich are all the same ultimately
+        self.states['coordinate'] = (x,y)                         # the attributes x, y, the attribute coordinate, and states[coordinate]
+        #log.debug("block {}: coordinates on scene {}".format(self.key, self.states['coordinate']))
         painter.setRenderHint(QtGui.QPainter.RenderHint.Antialiasing)
 
         # Draw main rectangle
@@ -399,7 +424,7 @@ class Block(QtWidgets.QGraphicsItem, CoreBlock):
         else:
             pen = QtGui.QPen(self._border_color)
 
-        pen.setWidth(3)
+        pen.setWidth(Constants.BLOCK_BORDER_WIDTH)
         painter.setPen(pen)
 
         painter.setBrush(QtGui.QBrush(self._bg_color))
@@ -417,8 +442,27 @@ class Block(QtWidgets.QGraphicsItem, CoreBlock):
             painter.setPen(Qt.GlobalColor.red)
         painter.drawText(QtCore.QRectF(0.0, 0.0 - self.height/2 + 10.0, self.width, self.height), Qt.AlignmentFlag.AlignCenter, self.label)  # NOTE the 3rd/4th arg in  QRectF seems to set the bounding box of the text, so if there is ever any clipping, thats why
 
+
         # Draw param text
         y_offset = 30 # params start 30 down from the top of the box
+
+        if self.is_dummy_block:  # only the key is shown
+            name = 'key'
+            value_label = self.key
+
+            painter.setPen(QtGui.QPen(1))
+            painter.setFont(nameFont)
+            x_offset = 7.5
+            painter.drawText(QtCore.QRectF(x_offset, 0 + y_offset, self.width, self.height), Qt.AlignmentFlag.AlignLeft, name + ': ')
+            writtenWidth = nameFontMetric.horizontalAdvance(name + ": ")
+            
+            valueFont, valueFontMetric = self.getValueFont()
+            painter.setFont(valueFont)
+            x_offset += writtenWidth # advance to after the name
+            painter.drawText(QtCore.QRectF(x_offset, 0 + y_offset, self.width, self.height), Qt.AlignmentFlag.AlignLeft, value_label)
+            y_offset += 20
+            return
+
         for key, item in self.params.items():
             name = item.name
             value = item.value
@@ -447,22 +491,23 @@ class Block(QtWidgets.QGraphicsItem, CoreBlock):
         return QtCore.QRectF(-2.5, -2.5, self.width+5, self.height+5) # margin to avoid artifacts
 
     def registerMoveStarting(self):
-        print(f"{self} moving")
+        log.debug("register move starting block")
         self.moving = True
         self.movingFrom = self.pos()
 
     def registerMoveEnding(self):
-        print(f"{self} moved")
+        log.debug("register move ending block")
         self.moving = False
         self.movingTo = self.pos()
 
     def mouseReleaseEvent(self, e):
+        log.debug("mouse release block")
         if not self.movingFrom == self.pos():
             self.parent.registerMoveCommand(self)
         super(self.__class__, self).mouseReleaseEvent(e)
 
     def mousePressEvent(self, e):
-        print(f"{self} clicked")
+        log.debug("mouse pressed block")
         self.parent.registerBlockMovement(self)
         try:
             self.parent.app.DocumentationTab.setText(self.documentation[self.key])
@@ -470,6 +515,7 @@ class Block(QtWidgets.QGraphicsItem, CoreBlock):
             pass
 
         self.moveToTop()
+        log.debug("mouse pressed forward to {}".format(self.__class__))
         super(self.__class__, self).mousePressEvent(e)
 
     def mouseDoubleClickEvent(self, e):
