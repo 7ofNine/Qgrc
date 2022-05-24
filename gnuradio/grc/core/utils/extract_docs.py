@@ -244,7 +244,7 @@ def worker_main():
     """
     Main entry point for the docstring extraction process.
     Manages RPC with main process through stdin/stdout.
-    Runs a docstring extraction for each key it read on stdin.
+    Runs a docstring extraction for each key it reads on stdin.
     """
     def send(code, cmd, args):
         json.dump((code, cmd, args), sys.stdout)

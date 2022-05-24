@@ -79,7 +79,7 @@ class PropsDialog(QtWidgets.QDialog):
                             line_edit.setStyleSheet(colors.LIGHT_THEME_STYLES[f'dtype_{param.dtype}'])
                         qvb.addWidget(line_edit, i, 1)
                         self.edit_params.append(line_edit)
-                    qvb.addWidget(QtWidgets.QLabel("unit"), i, 2)
+                    #qvb.addWidget(QtWidgets.QLabel("unit"), i, 2)
                 i+=1
             tab = QtWidgets.QWidget()
             tab.setLayout(qvb)

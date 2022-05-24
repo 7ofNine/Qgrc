@@ -4,7 +4,7 @@
 # SPDX-License-Identifier: GPL-2.0-or-later
 #
 
-
+import logging
 import itertools
 import re
 
@@ -16,12 +16,12 @@ from .block import Block
 from ._flags import Flags
 from ._templates import MakoTemplates
 
-
+log = log = logging.getLogger(__name__)
 def build(id, label='', category='', flags='', documentation='',
           value=None, asserts=None,
           parameters=None, inputs=None, outputs=None, templates=None, cpp_templates=None, **kwargs):
     block_id = id
-
+    log.debug("block build: {}, {}".format(block_id, documentation)) 
     cls = type(str(block_id), (Block,), {})  # create class with name block_id and base core.blocks.block
     cls.key = block_id
 
@@ -31,9 +31,10 @@ def build(id, label='', category='', flags='', documentation='',
     cls.flags = Flags(flags)
     if re.match(r'options$|variable|virtual', block_id):
         cls.flags.set(Flags.NOT_DSP, Flags.DISABLE_BYPASS)
-
-    cls.documentation = {'': documentation.strip('\n\t ').replace('\\\n', '')}
-
+    if documentation:
+        cls.documentation = {'': documentation.strip('\n\t ').replace('\\\n', '')}
+    else: 
+        cls.documentation ={'':'None'}
     cls.asserts = [_single_mako_expr(a, block_id) for a in to_list(asserts)]
 
     cls.inputs_data = build_ports(inputs, 'sink') if inputs else []

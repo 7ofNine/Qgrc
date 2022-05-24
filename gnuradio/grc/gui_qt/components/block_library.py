@@ -67,10 +67,21 @@ class LibraryView(QtWidgets.QTreeView):
         else:
             self.expand(self.currentIndex())
         label = self.model().data(self.currentIndex())
-        if label in self.parent().parent()._block_tree_flat:
-            block_key = self.parent().parent()._block_tree_flat[label].key
-            self.parent().parent().app.DocumentationTab.setText(self.parent().parent()._block_tree_flat[label].documentation[block_key])
-
+        #log.debug("library label: {}".format(label))
+        #log.debug("libview parent: {}".format(self.parent()))
+        #log.debug("libview parent.parent: {}".format(self.parent().parent()))
+        #log.debug("libview _block_tree_flat: {}".format(self.parent().parent()._block_tree_flat.__repr__))
+        #log.debug("libview _block_tree_flat: {}".format(self.parent().parent()._block_tree_flat[label].__repr__))
+        #btfl = self.parent().parent()._block_tree_flat[label]
+        if label in self.parent().parent()._block_tree_flat:            #" the key is actually an empty string. btfl is the actual block. the documentation is written to a dictinary"
+            block_key = self.parent().parent()._block_tree_flat[label].key #" but the key is ""
+            docview = self.parent().parent()._block_tree_flat[label].documentation.keys() # not clear how the whole documentation works and when doc extractor actually really does something
+            if '' in docview:
+                doctext = self.parent().parent()._block_tree_flat[label].documentation['']
+            if block_key in docview:
+               doctext =doctext + "' /n'" +  self.parent().parent()._block_tree_flat[label].documentation[block_key]
+            #self.parent().parent().app.DocumentationTab.setText(self.parent().parent()._block_tree_flat[label].documentation[block_key])
+            self.parent().parent().app.DocumentationTab.setText(doctext)
 
 class BlockLibrary(QtWidgets.QDockWidget, base.Component):
 
