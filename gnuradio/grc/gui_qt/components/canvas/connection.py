@@ -21,8 +21,6 @@ class Connection(CoreConnection, QtWidgets.QGraphicsPathItem):
         log.debug("create Connection object")
         CoreConnection.__init__(self, parent, source, sink)
         QtWidgets.QGraphicsPathItem.__init__(self)
-        
-              # is that good todo here? we don't do that for blocks!!
 
         self.source = source
         self.sink = sink

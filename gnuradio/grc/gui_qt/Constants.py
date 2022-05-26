@@ -52,6 +52,9 @@ CANVAS_GRID_SIZE = 8
 
 # block descriptions
 BLOCK_BORDER_WIDTH = 2
+BLOCK_ARC_RADIUS = 10
+BLOCK_FONT_FAMILY = 'Helvetica'
+BLOCK_FONT_SIZE = 10
 
 # port constraint dimensions
 PORT_BORDER_SEPARATION = 8

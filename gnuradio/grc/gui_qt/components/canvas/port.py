@@ -34,7 +34,7 @@ class Port(QtWidgets.QGraphicsItem, CorePort):
         Port constructor.
         Create list of connector coordinates.
         """
-        log.debug("port({}): construct {} port".format(parent.key, direction))
+        #log.debug("port({}): construct {} port".format(parent.key, direction))
         self._parent = parent
         super(self.__class__, self).__init__(parent, direction, **n)
         QtWidgets.QGraphicsItem.__init__(self)
@@ -78,7 +78,7 @@ class Port(QtWidgets.QGraphicsItem, CorePort):
 
     def create_labels(self, cr=None):
         """Create the labels for the socket."""
-        log.debug("port: create labels: NOP ")
+        #log.debug("port: create labels: NOP ")
         pass
 
 
@@ -135,7 +135,7 @@ class Port(QtWidgets.QGraphicsItem, CorePort):
         """
         Draw the port with a label.
         """
-        log.debug("paint port {}".format(self.name))
+        #log.debug("paint port {}".format(self.name))
         if self.hidden:
             return
         painter.setRenderHint(QtGui.QPainter.RenderHint.Antialiasing)

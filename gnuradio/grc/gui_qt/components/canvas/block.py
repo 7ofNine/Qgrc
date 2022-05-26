@@ -13,7 +13,6 @@ from ....core.blocks.block import Block as CoreBlock
 # Logging
 log = logging.getLogger(__name__)
 
-ARC        = 10  # arc radius for block corners
 LONG_VALUE = 20  # maximum length of a param string.
                  # if exceeded, '...' will be displayed
 
@@ -104,9 +103,10 @@ class PropsDialog(QtWidgets.QDialog):
                 for key, val in par.param.options.items():
                     if val == par.currentText():
                         par.param.set_value(key)
-        self._block.rewrite()
-        self._block.validate()
-        self._block.create_shapes_and_labels()
+        self._block.parent.update()   # update the scene (colour changes for blocks and connections)
+        #self._block.rewrite()
+        #self._block.validate()
+        #self._block.create_shapes_and_labels()
 
 
 '''
@@ -336,18 +336,18 @@ class Block(QtWidgets.QGraphicsItem, CoreBlock):
         #self.y = attrib['_coordinate'][1]
         #self.x = 500
         #self.y = 300
-        try:
-            self.coordinate = tuple(self.states['coordinate'])                         # this is useless. states does not have coordinate set, yet
-        except KeyError:
-            self.coordinate = (500,300)
-        self.width = 300.0 # default shouldnt matter, it will change immedaitely after the first paint. also useless. why is it even set?
+        #try:
+        #    self.coordinate = tuple(self.states['coordinate'])                         # this is useless. states does not have coordinate set, yet
+        #except KeyError:
+        #    self.coordinate = (500,300)
+        #self.width = 300.0 # default shouldnt matter, it will change immedaitely after the first paint. also useless. why is it even set?
         #self.block_key = block_key
         #self.block_label = block_label
         self.block_label = self.key   # what is this good for??
 
 
-        x,y = self.coordinate
-        self.setPos(x, y)                                     # dummy position. Do we really need this? where is the actual position loaded from *.grc file?
+        #x,y = self.coordinate
+        #self.setPos(x, y)                                     # dummy position. Do we really need this? where is the actual position loaded from *.grc file?
 
         self.create_shapes_and_labels()   # shouldn't that be done before setting the position
 
@@ -395,25 +395,24 @@ class Block(QtWidgets.QGraphicsItem, CoreBlock):
         return self.getNameFont()
 
     def getNameFont(self):
-        font = QtGui.QFont('Helvetica', 10)
+        font = QtGui.QFont(Constants.BLOCK_FONT_FAMILY, Constants.BLOCK_FONT_SIZE)
         font.setBold(True)
         fm = QtGui.QFontMetrics(font)
         return font, fm
 
     def getValueFont(self):
-        font = QtGui.QFont('Helvetica', 10)
+        font = QtGui.QFont(Constants.BLOCK_FONT_FAMILY, Constants.BLOCK_FONT_SIZE)
         font.setBold(False)
         fm = QtGui.QFontMetrics(font)
         return font, fm
 
 
     def paint(self, painter, option, widget):                     #painting the ports is managed by the scene not by the port. the port is a child of block
-        ts = datetime.datetime.now().timestamp()
-        log.debug("paint block {}".format(self.name))
+        #log.debug("paint block {}".format(self.name))
 
         #log.debug("block {}: paint  ".format(self.name))
-        x,y = (self.x(), self.y())                                #where has x,y been set?somewhere when loading *grc. Why are there so many versions of the coordinates ahich are all the same ultimately
-        self.states['coordinate'] = (x,y)                         # the attributes x, y, the attribute coordinate, and states[coordinate]
+        #x,y = (self.x(), self.y())                                #where has x,y been set?somewhere when loading *grc. Why are there so many versions of the coordinates ahich are all the same ultimately
+        #self.states['coordinate'] = (x,y)                         # the attributes x, y, the attribute coordinate, and states[coordinate]
         #log.debug("block {}: coordinates on scene {}".format(self.key, self.states['coordinate']))
         painter.setRenderHint(QtGui.QPainter.RenderHint.Antialiasing)
 
@@ -429,8 +428,7 @@ class Block(QtWidgets.QGraphicsItem, CoreBlock):
 
         painter.setBrush(QtGui.QBrush(self._bg_color))
 
-        ARC = 10
-        painter.drawRoundedRect(QtCore.QRectF(0.0, 0.0, self.width, self.height), ARC, ARC);
+        painter.drawRoundedRect(QtCore.QRectF(0.0, 0.0, self.width, self.height), Constants.BLOCK_ARC_RADIUS, Constants.BLOCK_ARC_RADIUS);
         painter.setPen(QtGui.QPen(1))
 
         nameFont, nameFontMetric = self.getNameFont()
@@ -491,35 +489,36 @@ class Block(QtWidgets.QGraphicsItem, CoreBlock):
         return QtCore.QRectF(-2.5, -2.5, self.width+5, self.height+5) # margin to avoid artifacts
 
     def registerMoveStarting(self):
-        log.debug("register move starting block")
+        #log.debug("register move starting block")
         self.moving = True
         self.movingFrom = self.pos()
 
     def registerMoveEnding(self):
-        log.debug("register move ending block")
+        #log.debug("register move ending block")
         self.moving = False
         self.movingTo = self.pos()
 
     def mouseReleaseEvent(self, e):
-        log.debug("mouse release block")
+        log.debug("block {} mouse release".format(self.key))
         if not self.movingFrom == self.pos():
             self.parent.registerMoveCommand(self)
         super(self.__class__, self).mouseReleaseEvent(e)
 
     def mousePressEvent(self, e):
-        log.debug("mouse pressed block")
+        log.debug("block {} mouse pressed".format(self.key))
         self.parent.registerBlockMovement(self)
         try:
-            self.parent.app.DocumentationTab.setText(self.documentation[self.key])
+            self.parent.app.DocumentationTab.setText(self.documentation[''])
         except KeyError:
             pass
 
         self.moveToTop()
-        log.debug("mouse pressed forward to {}".format(self.__class__))
+        log.debug("block {} mouse pressed forwarded, enabled {}".format(self.key, self.enabled))
         super(self.__class__, self).mousePressEvent(e)
 
     def mouseDoubleClickEvent(self, e):
-        log.debug(f"Detected double click on block {self.name}, opening PropsDialog")
+        log.debug(f"Block double click {self.name}")
+        e.accept()
         super(self.__class__, self).mouseDoubleClickEvent(e)
         props = PropsDialog(self)
         if props.exec():

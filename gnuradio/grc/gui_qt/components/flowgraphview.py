@@ -186,11 +186,13 @@ class FlowgraphView(QtWidgets.QGraphicsView, base.Component): # added base.Compo
             self.mousePressed = False
         super(FlowgraphView, self).mouseReleaseEvent(event)
 
-    def mouseDoubleClickEvent(self, event): # Will be used to open up dialog box of a block
-        pass
+    #def mouseDoubleClickEvent(self, event): # Will be used to open up dialog box of a block
+    #    log.debug("view double click 1")
+    #    pass
 
 
     def mouseDoubleClickEvent(self, event):
+        log.debug("view double click 2")
         # This will pass the double click event to the scene
         super(FlowgraphView, self).mouseDoubleClickEvent(event)
 

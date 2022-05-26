@@ -201,12 +201,12 @@ class FlowgraphScene(QtWidgets.QGraphicsScene, base.Component, CoreFlowgraph):
     def registerBlockMovement(self, clicked_block):
         # We need to pass the clicked block here because
         # it hasn't been registered as selected yet
-        log.debug("register block move scene")
+        #log.debug("register block move scene")
         for block in self.selected_blocks() + [clicked_block]:
             block.registerMoveStarting()
 
     def registerMoveCommand(self, block):
-        log.debug("register move command scene")
+        #log.debug("register move command scene")
         ts = datetime.datetime.now().timestamp()
         log.debug('fr{} move_cmd '.format(ts))
         for block in self.selected_blocks():
@@ -229,7 +229,7 @@ class FlowgraphScene(QtWidgets.QGraphicsScene, base.Component, CoreFlowgraph):
                 self.addItem(self.newConnection)
                 print("clicked a port")
         if event.button() == Qt.MouseButton.LeftButton:
-            log.debug("mouse pressed forwarded scene")
+            #log.debug("mouse pressed forwarded scene")
             self.mousePressed = True
             super(FlowgraphScene, self).mousePressEvent(event)
 
@@ -266,6 +266,7 @@ class FlowgraphScene(QtWidgets.QGraphicsScene, base.Component, CoreFlowgraph):
                     log.debug("Connecting two ports")
                     self.connectionPath = Connection(self, self.startPort, item)
                     self.connections.add(self.connectionPath)
+                    self.update()
             self.removeItem(self.newConnection)   #remove temporary straight line
             self.newConnection = None
             
@@ -282,6 +283,7 @@ class FlowgraphScene(QtWidgets.QGraphicsScene, base.Component, CoreFlowgraph):
         super(FlowgraphScene, self).mouseReleaseEvent(event)
 
     def mouseDoubleClickEvent(self, event): # Will be used to open up dialog box of a block
+        log.debug("scene double click")
         super(FlowgraphScene, self).mouseDoubleClickEvent(event)
 
 

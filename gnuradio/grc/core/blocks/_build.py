@@ -21,7 +21,7 @@ def build(id, label='', category='', flags='', documentation='',
           value=None, asserts=None,
           parameters=None, inputs=None, outputs=None, templates=None, cpp_templates=None, **kwargs):
     block_id = id
-    log.debug("block build: {}, {}".format(block_id, documentation)) 
+    #log.debug("block build: {}, {}".format(block_id, documentation)) 
     cls = type(str(block_id), (Block,), {})  # create class with name block_id and base core.blocks.block
     cls.key = block_id
 

@@ -502,6 +502,7 @@ class FlowGraph(Element):
                     'Block id "{}" not found.'.format(block.key))
 
         self.rewrite()  # global rewrite
+        self.validate() # set correct colours and error states
         return had_connect_errors
 
 

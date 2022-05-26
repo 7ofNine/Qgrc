@@ -293,7 +293,7 @@ class MainWindow(QtWidgets.QMainWindow, base.Component):
         actions['copy'].setEnabled(False)
         actions['paste'].setEnabled(False)
         actions['delete'].setEnabled(False)
-        actions['errors'].setEnabled(False)
+        actions['errors'].setEnabled(True) # for test
         actions['rotate_cw'].setEnabled(False)
         actions['rotate_ccw'].setEnabled(False)
         actions['enable'].setEnabled(False)
@@ -614,7 +614,7 @@ class MainWindow(QtWidgets.QMainWindow, base.Component):
         self.updateActions()
 
     def errors_triggered(self):
-        log.debug('errors')
+        log.debug('errors view not implemented, yet')
 
     def find_triggered(self):
         log.debug('find block')
