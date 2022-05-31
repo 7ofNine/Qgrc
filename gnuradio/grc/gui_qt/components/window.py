@@ -33,6 +33,7 @@ from PyQt6.QtGui import QStandardItemModel
 from . import FlowgraphView
 from .. import base
 from . import RotateCommand
+from . import ErrorsDialog
 
 # Logging
 log = logging.getLogger(__name__)
@@ -614,7 +615,8 @@ class MainWindow(QtWidgets.QMainWindow, base.Component):
         self.updateActions()
 
     def errors_triggered(self):
-        log.debug('errors view not implemented, yet')
+        errorDialog = ErrorsDialog(self, self.currentFlowgraph)
+        errorDialog.exec()
 
     def find_triggered(self):
         log.debug('find block')

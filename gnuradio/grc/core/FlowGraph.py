@@ -350,7 +350,7 @@ class FlowGraph(Element):
 
         return connection
 
-    def disconnect(self, *ports):
+    def fgdisconnect(self, *ports):
         to_be_removed = [con for con in self.connections
                          if any(port in con for port in ports)]
         for con in to_be_removed:
@@ -371,7 +371,8 @@ class FlowGraph(Element):
 
         if element in self.blocks:
             # Remove block, remove all involved connections
-            self.disconnect(*element.ports())
+            test = element.ports()
+            self.fgdisconnect(*element.ports())
             self.blocks.remove(element)
 
         elif element in self.connections:
