@@ -685,6 +685,7 @@ class MainWindow(QtWidgets.QMainWindow, base.Component):
 
     def select_all_triggered(self):
         log.warning('select all')
+        self.currentFlowgraph.select_all()
 
     def bypass_triggered(self):
         log.warning('bypass')

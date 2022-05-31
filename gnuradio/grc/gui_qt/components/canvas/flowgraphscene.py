@@ -320,6 +320,12 @@ class FlowgraphScene(QtWidgets.QGraphicsScene, base.Component, CoreFlowgraph):
         return max(z_values)
 
     def remove_element(self, element):
-        self.removeItem(element)
-        super(FlowgraphScene, self).remove_element(element)
+        if element is not self.options_block:    # the options block can not be deleted
+            self.removeItem(element)
+            super(FlowgraphScene, self).remove_element(element)
+
+    def select_all(self):
+        """Select all blocks in the flow graph"""
+        for item in self.items():
+            item.setSelected(True)
 

@@ -5,9 +5,7 @@
 #
 
 
-#from PyQt6 import (QtWidgets, QtCore, QtGui)
 from PyQt6.QtWidgets import (QDialog, QTableView, QVBoxLayout, QDialogButtonBox, QHeaderView)
-#from PyQt6.QtCore import (QAbstractTableModel)
 from PyQt6.QtGui import (QStandardItemModel, QStandardItem, QFont)
 
 class ErrorsDialog(QDialog):
@@ -75,11 +73,3 @@ class ErrorsDialog(QDialog):
             itemMessage = QStandardItem(message)
             itemMessage.setFont(tableFont)
             self.model.appendRow([itemSrc, itemAspect, itemMessage])
- 
-
-
-#class ErrorTableModel(QAbstractTableModel):
-#    """Data model for errors in the flowgraph"""
-
-#    def __init__(self):
-#        pass
