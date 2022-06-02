@@ -28,7 +28,7 @@ class ParameterEdit(QtWidgets.QWidget):
 class PropsDialog(QtWidgets.QDialog):
     def __init__(self, parent_block):
         super().__init__()
-        self.setMinimumSize(600, 400)
+        self.setMinimumSize(600, 400)   # The size, put into constants or use constants already defined
         self._block = parent_block
 
         self.setWindowTitle(f"Properties: {self._block.label}")
@@ -78,11 +78,17 @@ class PropsDialog(QtWidgets.QDialog):
                             line_edit.setStyleSheet(colors.LIGHT_THEME_STYLES[f'dtype_{param.dtype}'])
                         qvb.addWidget(line_edit, i, 1)
                         self.edit_params.append(line_edit)
-                    #qvb.addWidget(QtWidgets.QLabel("unit"), i, 2)
-                i+=1
+                i+=1   # skip this parameter
+
             tab = QtWidgets.QWidget()
-            tab.setLayout(qvb)
-            self.tabs.addTab(tab, cat)
+            tab.setLayout(qvb)                                     # add layout to displayed widget
+            tab.setBackgroundRole(QtGui.QPalette.ColorRole.Base)
+
+            scroll = QtWidgets.QScrollArea()                       # make it scrollable
+            scroll.setWidget(tab)
+            scroll.setWidgetResizable(True)
+            
+            self.tabs.addTab(scroll, cat)                         # displayed tab (cat) is scroll area/widget
 
         buttons = QtWidgets.QDialogButtonBox.StandardButton.Ok | QtWidgets.QDialogButtonBox.StandardButton.Cancel
         self.buttonBox = QtWidgets.QDialogButtonBox(buttons)
@@ -90,6 +96,10 @@ class PropsDialog(QtWidgets.QDialog):
         self.buttonBox.rejected.connect(self.reject)
         self.layout = QtWidgets.QVBoxLayout()
         self.layout.addWidget(self.tabs)
+
+        if self._block.get_error_messages():
+            for message in self._block.get_error_messages():
+                self.layout.addWidget(QtWidgets.QLabel(message))
         self.layout.addWidget(self.buttonBox)
 
         self.setLayout(self.layout)
@@ -104,6 +114,8 @@ class PropsDialog(QtWidgets.QDialog):
                     if val == par.currentText():
                         par.param.set_value(key)
         self._block.parent.update()   # update the scene (colour changes for blocks and connections)
+
+    # do we implement an apply like the original? Would have to separate the parameter set up into a differentmethod
         #self._block.rewrite()
         #self._block.validate()
         #self._block.create_shapes_and_labels()
@@ -215,7 +227,7 @@ class Block(QtWidgets.QGraphicsItem, CoreBlock):
         return type(name, bases, namespace)
 
     def create_shapes_and_labels(self):                       # erroneous. we have to create ports first before we can determine the size of the block and not rely on the existence of the port height!!
-        log.debug("block {}: create_shapes_and_labels".format(self.key))
+        #log.debug("block {}: create_shapes_and_labels".format(self.key))
         self.prepareGeometryChange()
 
         # figure out height of block based on how many params there are
