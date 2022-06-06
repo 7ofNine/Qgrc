@@ -12,6 +12,7 @@ from ...Constants import (
     CONNECTOR_ARROW_HEIGHT,
     CONNECTOR_LINE_WIDTH,
 )
+from .Utils import get_rotated_coordinate
 
 log = logging.getLogger(__name__)
 
@@ -53,13 +54,20 @@ class Connection(CoreConnection, QtWidgets.QGraphicsPathItem):
     #create curved part of connection line
     def updateLine(self, path):
 
+        segment = QtCore.QPointF(15.0, 0.0)
+        control = QtCore.QPointF(50.0, 0.0)
+
         self._line.clear()
         self._line.moveTo(self.startPoint)
-        c1 = self.startPoint + QtCore.QPointF(200, 0)
-        c2 = self.endPoint - QtCore.QPointF(200, 0)
-        self._line.cubicTo(c1, c2, self.endPoint)
+        self._line.lineTo(self.startPoint + self.rotated_segment(segment, self.source_block))
+        c1 = self.startPoint + self.rotated_segment(control, self.source_block)
+        c2 = self.endPoint - self.rotated_segment(control, self.sink_block)
+        self._line.cubicTo(c1, c2, self.endPoint - self.rotated_segment(QtCore.QPointF(CONNECTOR_ARROW_HEIGHT, 0), self.sink_block))
         path.addPath(self._line)
     
+    def rotated_segment(self, point, target):
+        return get_rotated_coordinate(point, target.rotation())
+
     # create connection path on flowgraph scene
     def update_connection_path(self):
         self._path.clear()
@@ -92,19 +100,17 @@ class Connection(CoreConnection, QtWidgets.QGraphicsPathItem):
 
         self._arrowhead.clear()
         self._arrowhead.moveTo(self.endPoint)
-        self._arrowhead.lineTo(self.endPoint + QtCore.QPointF(-CONNECTOR_ARROW_HEIGHT, -CONNECTOR_ARROW_BASE/2))    # this only allows sinks on the west/left side. needs extension for rotations
-        self._arrowhead.lineTo(self.endPoint + QtCore.QPointF(-CONNECTOR_ARROW_HEIGHT, CONNECTOR_ARROW_BASE/2))     # TODO: enhance for rotation
+        self._arrowhead.lineTo(self.endPoint + self.rotated_segment(QtCore.QPointF(-CONNECTOR_ARROW_HEIGHT, -CONNECTOR_ARROW_BASE/2), self.sink_block))
+        self._arrowhead.lineTo(self.endPoint + self.rotated_segment(QtCore.QPointF(-CONNECTOR_ARROW_HEIGHT, CONNECTOR_ARROW_BASE/2), self.sink_block))
         self._arrowhead.lineTo(self.endPoint)
         path.addPath(self._arrowhead)
 
     
 
     def paint(self, painter, option, widget):
-        #ts = datetime.datetime.now().timestamp()
-        log.debug("paint connection")
+        #log.debug("paint connection")
 
         self.update_connection_path()   # 
-        #log.debug("paint Connection object")
 
         pen = QtGui.QPen()
         pen.setWidth(CONNECTOR_LINE_WIDTH)

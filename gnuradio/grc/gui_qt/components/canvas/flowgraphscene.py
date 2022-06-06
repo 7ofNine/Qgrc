@@ -29,8 +29,7 @@ from ... import base
 from .connection import Connection
 from ....core.FlowGraph import FlowGraph as CoreFlowgraph
 from ..undoable_actions import MoveCommand
-
-
+from ... import Constants
 
 log = logging.getLogger(__name__)
 
@@ -194,7 +193,7 @@ class FlowgraphScene(QtWidgets.QGraphicsScene, base.Component, CoreFlowgraph):
         #rotate the blocks around the center point
         for selected_block in selected_blocks:
             x, y = selected_block.x(),selected_block.y()
-            x, y = Utils.get_rotated_coordinate((x - ctr_x, y - ctr_y), rotation)
+            x, y = self.get_rotated_coordinate((x - ctr_x, y - ctr_y), rotation)
             selected_block.setPos(x + ctr_x, y + ctr_y)
         return True
 
@@ -328,4 +327,26 @@ class FlowgraphScene(QtWidgets.QGraphicsScene, base.Component, CoreFlowgraph):
         """Select all blocks in the flow graph"""
         for item in self.items():
             item.setSelected(True)
+
+
+    def get_rotated_coordinate(self, coor, rotation):
+        """
+        Rotate the coordinate by the given rotation.
+        Args:
+            coor: the coordinate x, y tuple
+            rotation: the angle in degrees
+        Returns:
+            the rotated coordinates
+        """
+        # handles negative angles
+        rotation = (rotation + 360) % 360
+        if rotation not in Constants.POSSIBLE_ROTATIONS:
+            raise ValueError('unusable rotation angle "%s"'%str(rotation))
+        # determine the number of degrees to rotate
+        cos_r, sin_r = {
+            0: (1, 0), 90: (0, 1), 180: (-1, 0), 270: (0, -1),
+        }[rotation]
+        x, y = coor
+        return x * cos_r + y * sin_r, -x * sin_r + y * cos_r
+
 

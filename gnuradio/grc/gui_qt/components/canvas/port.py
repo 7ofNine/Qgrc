@@ -70,9 +70,9 @@ class Port(QtWidgets.QGraphicsItem, CorePort):
         self.width = max(15.0, fm.horizontalAdvance(self.name) * 1.5)
         log.debug("port name: {}".format(self.name))
         if self._dir == "sink":
-            self.connection_point = QtCore.QPointF(-self.width/2.0, self.height / 2.0)
+            self.connection_point = QtCore.QPointF(-self.width/2 +2, self.height / 2.0)
         else:
-            self.connection_point = QtCore.QPointF(self.width/2.0, self.height / 2.0)
+            self.connection_point = QtCore.QPointF(self.width, self.height / 2.0)
         #log.debug("port height = {}, width = {}".format(self.height, self.width))
         #log.debug("port {} direction {} connection point{}".format(self.name, self._dir, self.connection_point))
 
