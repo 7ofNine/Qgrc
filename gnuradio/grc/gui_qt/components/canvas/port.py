@@ -32,21 +32,13 @@ class Port(QtWidgets.QGraphicsItem, CorePort):
     def __init__(self, parent, direction, **n):
         """
         Port constructor.
-        Create list of connector coordinates.
         """
         #log.debug("port({}): construct {} port".format(parent.key, direction))
+
         self._parent = parent
         super(self.__class__, self).__init__(parent, direction, **n)
         QtWidgets.QGraphicsItem.__init__(self)
-        #self.y_offset = 0
-        #self.height = 15.0  # the width can not be correct this way. It doesn't respect the size of the label. The whole sequencing from block to port is somewhat suspect and seems to be partially redundant
-        #self.width = 15.0   
         self.create_shapes()
-
-        #if self._dir == "sink":
-        #    self.connection_point = QtCore.QPointF(0.0, self.height / 2.0)
-        #else:
-        #    self.connection_point = QtCore.QPointF(15.0, self.height / 2.0)
 
         #self.setFlag(QtWidgets.QGraphicsItem.GraphicsItemFlag.ItemSendsScenePositionChanges)  # still a problem unknown how to solve it with sink connection point
 
@@ -61,6 +53,7 @@ class Port(QtWidgets.QGraphicsItem, CorePort):
     #    for conn in self.connections():
     #        conn.updateLine()
     #    return QtWidgets.QGraphicsLineItem.itemChange(self, change, value)
+
     def create_shapes(self):
         """Create new areas and labels for the port."""
         #log.debug("port({}), {}: create shapes".format(self.parent.key, self.name))
@@ -70,11 +63,13 @@ class Port(QtWidgets.QGraphicsItem, CorePort):
         self.width = max(15.0, fm.horizontalAdvance(self.name) * 1.5)
         log.debug("port name: {}".format(self.name))
         if self._dir == "sink":
-            self.connection_point = QtCore.QPointF(-self.width/2 +2, self.height / 2.0)
+            self.connection_point = QtCore.QPointF(-self.width/2 + 2, self.height / 2.0)                       # determine connection point for port
         else:
             self.connection_point = QtCore.QPointF(self.width, self.height / 2.0)
         #log.debug("port height = {}, width = {}".format(self.height, self.width))
         #log.debug("port {} direction {} connection point{}".format(self.name, self._dir, self.connection_point))
+
+        self.text_rectangle = {"sink":QtCore.QRectF(-max(0, self.width - 15), 0, self.width, 15), "source":QtCore.QRectF(0, 0, self.width, 15)}  # define text rectangle
 
     def create_labels(self, cr=None):
         """Create the labels for the socket."""
@@ -113,13 +108,9 @@ class Port(QtWidgets.QGraphicsItem, CorePort):
         #self._border_color = tuple(max(c - 0.3, 0) for c in color)
 
     def boundingRect(self):
-        #ts = datetime.datetime.now().timestamp()
         #log.debug('br{} bounding'.format(ts))
-
-        if self._dir == "sink":
-            return QtCore.QRectF(-max(0, self.width - 15), 0, self.width, 15) # same as the rectangle we draw, but with a 0.5*pen width margin
-        else:
-            return QtCore.QRectF(0, 0, self.width, 15) # same as the rectangle we draw, but with a 0.5*pen width margin
+        
+        return self.text_rectangle[self._dir]
 
     def getConnectionPoint(self):
         #log.debug("port{}: get connection point".format(self.parent.key))
@@ -135,26 +126,35 @@ class Port(QtWidgets.QGraphicsItem, CorePort):
         """
         Draw the port with a label.
         """
-        #log.debug("paint port {}".format(self.name))
         if self.hidden:
             return
         painter.setRenderHint(QtGui.QPainter.RenderHint.Antialiasing)
 
-        #x, y = tuple(self.parent.states['coordinate'])
         pen = QtGui.QPen(self._border_color)
         painter.setPen(pen)
         painter.setBrush(QtGui.QBrush(self._bg_color))
 
-        if self._dir == "sink":
-            rect = QtCore.QRectF(-max(0, self.width - 15), 0, self.width, 15) # same as the rectangle we draw, but with a 0.5*pen width margin
-        else:
-            rect = QtCore.QRectF(0, 0, self.width, 15) # same as the rectangle we draw, but with a 0.5*pen width margin
-        painter.drawRect(rect)
+        painter.drawRect(self.text_rectangle[self._dir])
 
         painter.setPen(QtGui.QPen(1))
         font = QtGui.QFont('Helvetica', 8)
         painter.setFont(font)
-        if self._dir == "sink":
-            painter.drawText(QtCore.QRectF(-max(0, self.width - 15), 0, self.width, 15), Qt.AlignmentFlag.AlignCenter, self.name)
-        else:
-            painter.drawText(QtCore.QRectF(0, 0, self.width, 15), Qt.AlignmentFlag.AlignCenter, self.name)
+        
+        # would using a graphicstextitem avoid all these rotations?? (except for 2 values, where it has to be mirrored by 180)
+        painter.save()
+
+        self.rotate_painter(painter, self.text_rectangle[self._dir])
+
+        painter.drawText(self.text_rectangle[self._dir], Qt.AlignmentFlag.AlignCenter, self.name)   # write port name
+
+        painter.restore()
+
+    def rotate_painter(self, painter, rectangle):
+
+        painter.translate(rectangle.center())
+            
+        rotation_modulus = self.parent.rotation()%360.0
+        if rotation_modulus in {90.0, 180.0}:                                                  
+            painter.setTransform(QtGui.QTransform().rotate(180.0), combine = True)
+    
+        painter.translate(- rectangle.center())

@@ -34,6 +34,7 @@ from . import FlowgraphView
 from .. import base
 from . import RotateCommand
 from . import ErrorsDialog
+from .canvas.block import PropsDialog
 
 # Logging
 log = logging.getLogger(__name__)
@@ -632,6 +633,10 @@ class MainWindow(QtWidgets.QMainWindow, base.Component):
 
     def properties_triggered(self):
         log.debug('properties')
+        for block in self.currentFlowgraph.selected_blocks():
+            props = PropsDialog(block)
+            props.exec()
+
 
     def enable_triggered(self):
         log.debug('enable')
@@ -664,7 +669,7 @@ class MainWindow(QtWidgets.QMainWindow, base.Component):
 
     def exit_triggered(self):
         log.debug('exit: save not implemented, yet')
-        # TODO: Make sure all flowgraphs have been saved
+        # TODO: Make sure all flowgraphs have been saved 
         self.app.exit()
 
     def help_triggered(self):

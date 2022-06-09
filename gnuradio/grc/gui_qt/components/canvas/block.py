@@ -226,7 +226,7 @@ class Block(QtWidgets.QGraphicsItem, CoreBlock):
         namespace = cls.__dict__.copy()
         return type(name, bases, namespace)
 
-    def create_shapes_and_labels(self):                       # erroneous. we have to create ports first before we can determine the size of the block and not rely on the existence of the port height!!
+    def create_shapes_and_labels(self):                       
         #log.debug("block {}: create_shapes_and_labels".format(self.key))
         self.prepareGeometryChange()
 
@@ -234,11 +234,14 @@ class Block(QtWidgets.QGraphicsItem, CoreBlock):
         i = 30.0
         if self.is_dummy_block: #has predetermined number of lines. SHould be a constant
             i = 50.0
+            self.lines = 2
         else:
+            self.lines = 1
             for key, item in self.params.items():
                 value = item.value
                 if value is not None and item.hide == 'none':    # hide determines if the attribute is shown in the graphic representation. defined in corresponding *.yml file
                     i+= 20.0
+                    self.lines  += 1        # increment the number of lines
 
         self.height = i
 
@@ -313,7 +316,14 @@ class Block(QtWidgets.QGraphicsItem, CoreBlock):
 
         self._update_colors()
         self.create_port_labels()
-        self.setTransformOriginPoint(self.width / 2, self.height / 2)   # set the origin for transformations. upper right corner?
+        self.setTransformOriginPoint(self.width / 2, self.height / 2)   # set the origin for transformations to the center of the rectangle
+
+        #if(self.is_dummy_block):
+        #    dummyLine = QtWidgets.QGraphicsTextItem(self)
+        #    dummyLine.setFont(QtGui.QFont('Helvetica', 8))
+        #    dummyLine.setPos(QtCore.QPointF(0.0, - self.height/2 + 10))
+        #    dummyLine.setPlainText("Test")
+
 
 
     def create_port_labels(self):
@@ -331,8 +341,6 @@ class Block(QtWidgets.QGraphicsItem, CoreBlock):
     def __init__(self, parent, **n):
         log.debug("block {}: create".format(self.key))
         super(self.__class__, self).__init__(parent, **n) 
-        
-        #CoreBlock.__init__(self, parent)      # this fails with build-in blocks. Is there a way?
         QtWidgets.QGraphicsItem.__init__(self)
         
 
@@ -341,20 +349,6 @@ class Block(QtWidgets.QGraphicsItem, CoreBlock):
         for source in self.sources:
             source.setParentItem(self)
 
-
-        #self.__dict__.update(attrib)
-        #self.params = params
-        #self.x = attrib['_coordinate'][0]
-        #self.y = attrib['_coordinate'][1]
-        #self.x = 500
-        #self.y = 300
-        #try:
-        #    self.coordinate = tuple(self.states['coordinate'])                         # this is useless. states does not have coordinate set, yet
-        #except KeyError:
-        #    self.coordinate = (500,300)
-        #self.width = 300.0 # default shouldnt matter, it will change immedaitely after the first paint. also useless. why is it even set?
-        #self.block_key = block_key
-        #self.block_label = block_label
         self.block_label = self.key   # what is this good for??
 
 
@@ -423,9 +417,10 @@ class Block(QtWidgets.QGraphicsItem, CoreBlock):
         #log.debug("paint block {}".format(self.name))
 
         #log.debug("block {}: paint  ".format(self.name))
-        #x,y = (self.x(), self.y())                                #where has x,y been set?somewhere when loading *grc. Why are there so many versions of the coordinates ahich are all the same ultimately
-        #self.states['coordinate'] = (x,y)                         # the attributes x, y, the attribute coordinate, and states[coordinate]
         #log.debug("block {}: coordinates on scene {}".format(self.key, self.states['coordinate']))
+        log.debug("block label: {}".format(self.label))
+        log.debug("block number of lines {}".format(self.lines))
+        log.debug("block height {}".format(self.height))
         painter.setRenderHint(QtGui.QPainter.RenderHint.Antialiasing)
 
         # Draw main rectangle
@@ -443,15 +438,26 @@ class Block(QtWidgets.QGraphicsItem, CoreBlock):
         painter.drawRoundedRect(QtCore.QRectF(0.0, 0.0, self.width, self.height), Constants.BLOCK_ARC_RADIUS, Constants.BLOCK_ARC_RADIUS);
         painter.setPen(QtGui.QPen(1))
 
+        #log.debug("block rotation: {} ".format(self.rotation()) )
         nameFont, nameFontMetric = self.getNameFont()
+        # text from here on. correct for proper orientation. read orientation from the right
         # Draw block label text
         painter.setFont(nameFont)
         if self.is_valid():
             painter.setPen(QtGui.QPen(1))
         else:
             painter.setPen(Qt.GlobalColor.red)
-        painter.drawText(QtCore.QRectF(0.0, 0.0 - self.height/2 + 10.0, self.width, self.height), Qt.AlignmentFlag.AlignCenter, self.label)  # NOTE the 3rd/4th arg in  QRectF seems to set the bounding box of the text, so if there is ever any clipping, thats why
-
+        log.debug("block label rectangle {}".format(QtCore.QRectF(0.0, 0.0 - self.height/2 + 10.0, self.width, self.height)))
+        #painter.drawText(QtCore.QRectF(0.0, 0.0 - self.height/2 + 10.0, self.width, self.height), Qt.AlignmentFlag.AlignCenter, self.label)  # NOTE the 3rd/4th arg in  QRectF seems to set the bounding box of the text, so if there is ever any clipping, thats why
+        painter.save()
+        if self.lines > 1:
+            self.rotate_painter(painter, QtCore.QRectF(0.0, + self.height/2 - 10 , self.width, self.height))
+            painter.drawText(QtCore.QRectF(0.0, - self.height/2 + 10 , self.width, self.height), Qt.AlignmentFlag.AlignCenter, self.label)
+            #painter.drawText(QtCore.QRectF(0.0, + self.height/2 - 10 , self.width, self.height), Qt.AlignmentFlag.AlignCenter, self.label)
+        else:                  # a block that has only a label displayed
+            self.rotate_painter(painter, QtCore.QRectF(0.0, 0.0, self.width, self.height))
+            painter.drawText(QtCore.QRectF(0.0, 0.0, self.width, self.height), Qt.AlignmentFlag.AlignCenter, self.label)
+        painter.restore()
 
         # Draw param text
         y_offset = 30 # params start 30 down from the top of the box
@@ -462,7 +468,10 @@ class Block(QtWidgets.QGraphicsItem, CoreBlock):
 
             painter.setPen(QtGui.QPen(1))
             painter.setFont(nameFont)
+
+            painter.save()
             x_offset = 7.5
+            self.rotate_painter(painter, QtCore.QRectF(x_offset, 0 + y_offset, self.width, self.height))
             painter.drawText(QtCore.QRectF(x_offset, 0 + y_offset, self.width, self.height), Qt.AlignmentFlag.AlignLeft, name + ': ')
             writtenWidth = nameFontMetric.horizontalAdvance(name + ": ")
             
@@ -471,6 +480,7 @@ class Block(QtWidgets.QGraphicsItem, CoreBlock):
             x_offset += writtenWidth # advance to after the name
             painter.drawText(QtCore.QRectF(x_offset, 0 + y_offset, self.width, self.height), Qt.AlignmentFlag.AlignLeft, value_label)
             y_offset += 20
+            painter.restore()
             return
 
         for key, item in self.params.items():
@@ -494,6 +504,7 @@ class Block(QtWidgets.QGraphicsItem, CoreBlock):
                 x_offset += writtenWidth # advance to after the name
                 painter.drawText(QtCore.QRectF(x_offset, 0 + y_offset, self.width, self.height), Qt.AlignmentFlag.AlignLeft, value_label)
                 y_offset += 20
+        painter.resetTransform()
 
     def boundingRect(self): # required to have
         x,y = (self.x(), self.y())
@@ -552,4 +563,27 @@ class Block(QtWidgets.QGraphicsItem, CoreBlock):
     def moveToTop(self):
         # TODO: Is there a simpler way to do this?
         self.setZValue(self.parent.getMaxZValue() + 1)
+            
+    #def correct_rotation(self):
+    #    module = self.rotation()%360.0
+    #    if module == -180.0:
+    #        return 180.0
+    #    if module == -270.0:
+    #        return 270.0
+    #    if module == 90:
+    #        return -90.0
+    #    if module == 180.0:
+    #        return -180.0
+    #    return 0.0
+
+    def rotate_painter(self, painter, rectangle):
+
+        painter.translate(rectangle.center())
+            
+        rotation_modulus = self.rotation()%360.0
+        if rotation_modulus in {90.0, 180.0}:                                                  
+            painter.setTransform(QtGui.QTransform().rotate(180.0), combine = True)
+    
+        painter.translate(- rectangle.center())
+
 

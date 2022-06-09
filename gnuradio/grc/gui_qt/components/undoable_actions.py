@@ -29,12 +29,12 @@ class RotateCommand(QUndoCommand):
     def __init__(self, flowgraph, angle):
         # TODO: Keep track of which items are being rotated
         QUndoCommand.__init__(self)
-        log.debug("init Rotate")
+        log.debug("init Rotate angle: {}".format(angle))
         self.flowgraph = flowgraph
         self.angle = angle
 
     def redo(self):
-        log.debug("redo Rotate")
+        log.debug("redo Rotate angle: {}".format(self.angle))
         self.flowgraph.rotate_selected(self.angle)
         self.flowgraph.update()
 
