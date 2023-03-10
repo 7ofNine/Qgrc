@@ -136,7 +136,7 @@ class Port(QtWidgets.QGraphicsItem, CorePort):
 
         painter.drawRect(self.text_rectangle[self._dir])
 
-        painter.setPen(QtGui.QPen(1))
+        painter.setPen(QtGui.QPen(QtCore.Qt.PenStyle.SolidLine))
         font = QtGui.QFont('Helvetica', 8)
         painter.setFont(font)
         

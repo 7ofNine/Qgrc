@@ -19,14 +19,18 @@ Core contents.
 
 # If gnuradio is installed then the pybind output will be in this directory.
 # Otherwise it will reside in bindings/.
-
+#import dlltracer
 import os
+import sys
+import dlltracer
 
 try:
-    from .gr_python import *
+#    with dlltracer.Trace(out=sys.stdout):
+    from .gr_python import * 
 except ImportError:
     dirname, filename = os.path.split(os.path.abspath(__file__))
     __path__.append(os.path.join(dirname, "bindings"))
+#    with dlltracer.Trace(out=sys.stdout):
     from .gr_python import *
 
 from .exceptions import *

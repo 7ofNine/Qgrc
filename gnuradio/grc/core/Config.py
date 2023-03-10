@@ -9,10 +9,14 @@ import os
 from os.path import expanduser, normpath, expandvars, exists
 from collections import OrderedDict
 
+from PyQt6.QtCore import QObject
+
 from . import Constants
 
 
-class Config(object):
+class Config(QObject):
+    
+
     name = 'GNU Radio Companion (no gui)'
     license = __doc__.strip()
     website = 'https://www.gnuradio.org/'
@@ -21,6 +25,7 @@ class Config(object):
         'GRC_HIER_PATH', Constants.DEFAULT_HIER_BLOCK_LIB_DIR)
 
     def __init__(self, version, version_parts=None, name=None, prefs=None):
+        QObject.__init__(self)
         self._gr_prefs = prefs if prefs else DummyPrefs()
         self.version = version
         self.version_parts = version_parts or version[1:].split(

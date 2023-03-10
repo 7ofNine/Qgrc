@@ -121,102 +121,6 @@ class PropsDialog(QtWidgets.QDialog):
         #self._block.create_shapes_and_labels()
 
 
-'''
-class BlockTitle(QtWidgets.QLabel):
-    def __init__(self, block_key):
-        super(BlockTitle, self).__init__()
-
-        title = block_key.replace('_', ' ').title()
-        self.setText(title)
-        title_font = QtGui.QFont("Sans Serif", 9, QtGui.QFont.Bold)
-        self.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.setFont(title_font)
-        self.setContentsMargins(5, 5, 5, 5)
-        self.title_only = False
-        self.color = QtGui.QColor(0xD0, 0xD0, 0xFF)
-
-    def paintEvent(self, event):
-        # handle paintEvent just enough to provide a (partial)
-        # rounded rectangle around the title
-
-        painter = QtGui.QPainter()
-        painter.begin(self)
-        painter.setPen(QtGui.QPen(2))
-        painter.setBrush(QtGui.QBrush(self.color))
-
-        # set rounding to include bottom of title
-        # otherwise, push the bottom of the rounded rectangle
-        # outside of the widget window
-        height = self.height()-1 if self.title_only else self.height()+ARC
-        painter.drawRoundedRect(0, 0, self.width()-1, height, ARC, ARC);
-
-        painter.end()
-
-        # use the default handler for everything else
-        super(BlockTitle, self).paintEvent(event)
-
-    def boundingRect(self): # required to have
-        return QRectF(self.x, self.y, self.current_width, 150) # same as the rectangle we draw
-
-    def mouseReleaseEvent(self, e):
-        super(Block, self).mouseReleaseEvent(e)
-
-    def mouseDoubleClickEvent(self, e):
-        print("DETECTED DOUBLE CLICK!")
-        super(Block, self).mouseDoubleClickEvent(e)
-
-class BlockParams(QtWidgets.QWidget):
-    def __init__(self, params):
-        super(BlockParams, self).__init__()
-        self.params_only = False
-
-        label_font = QtGui.QFont("Sans Serif",  8, QtGui.QFont.Bold)
-        value_font = QtGui.QFont("Sans Serif",  8, QtGui.QFont.Normal)
-
-        layout = QtWidgets.QGridLayout()
-        layout.setSpacing(2)
-        layout.setVerticalSpacing(0)
-        layout.setContentsMargins(ARC, 3, ARC, ARC)
-        for row, (key, value) in enumerate(params):
-            if value is not None:
-                param_label = QtWidgets.QLabel(key+': ')
-                param_label.setAlignment(Qt.AlignmentFlag.AlignRight)
-                param_label.setFont(label_font)
-
-                if len(value) > LONG_VALUE:
-                    value = value[:LONG_VALUE-3] + '...'
-                param_value = QtWidgets.QLabel(value)
-                param_value.setFont(value_font)
-
-                layout.addWidget(param_label, row, 0)
-                layout.addWidget(param_value, row, 1)
-
-        self.setLayout(layout)
-
-        self.setContentsMargins(0, 0, 0, 5)
-        self.color = QtGui.QColor(0xFA, 0xF8, 0xE0)
-
-    def paintEvent(self, event):
-        # handle paintEvent just enough to provide a (partial)
-        # rounded rectangle around the title
-
-        painter = QtGui.QPainter()
-        painter.begin(self)
-        painter.setPen(QtGui.QPen(2))
-        painter.setBrush(QtGui.QBrush(self.color))
-
-        # set rounding to include top of title
-        # otherwise, push the top of the rounded rectangle
-        # outside of the widget window
-        top = 1 if self.params_only else -ARC
-        painter.drawRoundedRect(0, top, self.width()-1, self.height()-1, ARC, ARC);
-
-        painter.end()
-
-        # use the default handler for everything else
-        super(BlockParams, self).paintEvent(event)
-'''
-
 class Block(QtWidgets.QGraphicsItem, CoreBlock):
 
     @classmethod
@@ -241,7 +145,7 @@ class Block(QtWidgets.QGraphicsItem, CoreBlock):
                 value = item.value
                 if value is not None and item.hide == 'none':    # hide determines if the attribute is shown in the graphic representation. defined in corresponding *.yml file
                     i+= 20.0
-                    self.lines  += 1        # increment the number of lines
+                    self.lines  += 1        # increment the number of visible parameter lines
 
         self.height = i
 
@@ -361,7 +265,7 @@ class Block(QtWidgets.QGraphicsItem, CoreBlock):
             so this was extracted into a nested function.
             """
             if self.is_dummy_block:
-                return colors.MISSING_BLOCK_BACKGROUND_COLOR
+                return colors.BLOCK_MISSING_BACKGROUND_COLOR
             if self.state == 'bypassed':
                 return colors.BLOCK_BYPASSED_COLOR
             if self.state == 'enabled':
@@ -375,7 +279,7 @@ class Block(QtWidgets.QGraphicsItem, CoreBlock):
             Get the border color for this block
             """
             if self.is_dummy_block:
-                return colors.MISSING_BLOCK_BORDER_COLOR
+                return colors.BLOCK_MISSING_BORDER_COLOR
             if self.deprecated:
                 return colors.BLOCK_DEPRECATED_BORDER_COLOR
             if self.state == 'enabled':
@@ -414,7 +318,7 @@ class Block(QtWidgets.QGraphicsItem, CoreBlock):
         painter.setRenderHint(QtGui.QPainter.RenderHint.Antialiasing)
 
         # Draw main rectangle
-        pen = QtGui.QPen(1)
+        pen = QtGui.QPen(QtCore.Qt.PenStyle.SolidLine)
         if self.isSelected():
             pen = QtGui.QPen(colors.HIGHLIGHT_COLOR)
         else:
@@ -425,8 +329,8 @@ class Block(QtWidgets.QGraphicsItem, CoreBlock):
 
         painter.setBrush(QtGui.QBrush(self._bg_color))
 
-        painter.drawRoundedRect(QtCore.QRectF(0.0, 0.0, self.width, self.height), Constants.BLOCK_ARC_RADIUS, Constants.BLOCK_ARC_RADIUS);
-        painter.setPen(QtGui.QPen(1))
+        painter.drawRect(QtCore.QRectF(0.0, 0.0, self.width, self.height));
+        painter.setPen(QtGui.QPen(QtCore.Qt.PenStyle.SolidLine))
 
         #log.debug("block rotation: {} ".format(self.rotation()) )
         nameFont, nameFontMetric = self.getNameFont()
@@ -434,7 +338,7 @@ class Block(QtWidgets.QGraphicsItem, CoreBlock):
         # Draw block label text
         painter.setFont(nameFont)
         if self.is_valid():
-            painter.setPen(QtGui.QPen(1))
+            painter.setPen(QtGui.QPen(QtCore.Qt.PenStyle.SolidLine))
         else:
             painter.setPen(Qt.GlobalColor.red)
         painter.save()
@@ -452,7 +356,7 @@ class Block(QtWidgets.QGraphicsItem, CoreBlock):
             name = 'key'
             value_label = self.key
 
-            painter.setPen(QtGui.QPen(1))
+            painter.setPen(QtGui.QPen(QtCore.Qt.PenStyle.SolidLine))
             painter.setFont(nameFont)
 
             x_offset = self.oriented_param_offset_x(0) #7.5
@@ -477,7 +381,7 @@ class Block(QtWidgets.QGraphicsItem, CoreBlock):
             value_label = item.options[value] if value in item.options else value
             if value is not None and item.hide == 'none':
                 if item.is_valid():
-                    painter.setPen(QtGui.QPen(1))
+                    painter.setPen(QtGui.QPen(QtCore.Qt.PenStyle.SolidLine))
                 else:
                     painter.setPen(Qt.GlobalColor.red)
 
@@ -605,4 +509,3 @@ class Block(QtWidgets.QGraphicsItem, CoreBlock):
             return -20
         else:
             return 20
-        

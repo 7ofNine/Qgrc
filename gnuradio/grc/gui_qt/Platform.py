@@ -33,7 +33,7 @@ class Platform(CorePlatform):
 
         self._move_old_pref_file()
 
-    def get_prefs_file(self):
+    def get_prefs_file(self):                                # not used !
         return self.config.gui_prefs_file
 
     def _move_old_pref_file(self):
@@ -42,7 +42,7 @@ class Platform(CorePlatform):
             'GRC_PREFS_PATH', os.path.expanduser('~/.grc'))
         if gui_prefs_file == old_gui_prefs_file:
             return  # prefs file overridden with env var
-        if os.path.exists(old_gui_prefs_file) and not os.path.exists(gui_prefs_file):
+        if os.path.exists(old_gui_prefs_file) and not os.path.exists(gui_prefs_file):  # if old style config move it to new directory and rename
             try:
                 import shutil
                 shutil.move(old_gui_prefs_file, gui_prefs_file)

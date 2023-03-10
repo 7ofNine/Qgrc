@@ -1,0 +1,12 @@
+BE AWARE!
+
+this package is part of the runtime and is only indirectly used.
+It originates at
+...\gnuradio\gnuradio-runtime\python\pmt
+...\gnuradio\gnuradio-runtime\python\pmt\bindings for the *.pyd file
+
+
+
+
+
+

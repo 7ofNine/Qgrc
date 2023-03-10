@@ -12,6 +12,7 @@ GNU Radio is licensed under the GNU General Public License (GPL) version 3. All 
 # The docstring will be associated with the top level of the package.
 
 import os
+import sys
 from pkgutil import extend_path
 
 # Allow OOT modules to be installed elsewhere on the PYTHONPATH
@@ -34,6 +35,7 @@ if os.name == 'nt' and hasattr(os, 'add_dll_directory'):
             except Exception as ex:
                 print('add_dll_directory(%s): %s' % (bin_dir, ex))
             break
+print('search path: %s' %(sys.path))
 
 # Check if the gnuradio package is installed or whether we're attempting to import it from
 # the build directory.

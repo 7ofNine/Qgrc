@@ -1,0 +1,14 @@
+The original location in the gnuradio source tree is
+
+...\ the installed folder for binary files e.g. *.dll from gnuradio as other needed libraries as well
+
+the *dll'd files in this folder are not part
+of this project but are needed for making it run.
+They are artifacts of a boost, and original gnuradio and volk build, with grc disabled 
+
+boost_program_options-XXXXX.dll
+boost_thread-XXXXXX.dll
+gnuradio-pmt.dll
+gnuradio-runtime.dll
+volk.dll
+spdlog.dll

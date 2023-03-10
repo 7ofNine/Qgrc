@@ -77,6 +77,10 @@ class Component(object):
     def platform(self):
         return self._app().platform
 
+    @property
+    def config(self):
+        return self.platform.config
+
     ### Required methods
 
     @abc.abstractmethod
@@ -118,6 +122,12 @@ class Component(object):
           and slots can be separated into a view and controller class
 
         '''
+        def key_filter(key):           #special handling for open_recent actions
+            if key.startswith('open_recent_'):
+                new_key = key[:-2]
+                return key[:-2]        # remove _digit
+            return key
+
         actions = self.actions
         for key in actions:
             if useToggled and actions[key].isCheckable():
@@ -135,7 +145,8 @@ class Component(object):
 
             # Try and bind the 'triggered' signal to a handler.
             try:
-                handler = key + triggeredHandler
+                new_key = key_filter(key)
+                handler = new_key + triggeredHandler
                 actions[key].triggered.connect(getattr(self, handler))
                 log.debug("<{0}.triggered> connected to handler <{1}>".format(key, handler))
             except:
@@ -146,6 +157,8 @@ class Component(object):
                 except:
                     # This should never happen
                     log.error("Class cannot handle <{0}.triggered>".format(key))
+        
+
 
     def notImplemented(self):
         log.warning('Not implemented')

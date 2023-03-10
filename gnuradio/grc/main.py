@@ -35,6 +35,8 @@ LOG_LEVELS = {
 
 ### Load GNU Radio
 try:
+#    import dlltracer
+#    with dlltracer.Trace(out=sys.stdout):
     from gnuradio import gr
 except ImportError as ex:
     # Throw a new exception with more information

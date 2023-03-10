@@ -22,6 +22,8 @@ import logging
 import os
 import sys
 import subprocess
+from pathlib import Path
+from os.path import normpath
 
 # Third-party  modules
 
@@ -51,6 +53,8 @@ QStyle = QtWidgets.QStyle
 class MainWindow(QtWidgets.QMainWindow, base.Component):
     
     def __init__(self):
+        self._close_pending = False;  # prepare closing
+
         QtWidgets.QMainWindow.__init__(self)
         base.Component.__init__(self)
 
@@ -103,7 +107,7 @@ class MainWindow(QtWidgets.QMainWindow, base.Component):
         self.createMenus(self.actions, self.menus)
         self.createToolbars(self.actions, self.toolbars)
         self.connectSlots()
-
+        self.config.recent_files_changed.connect(self.recent_files_changed)
 
         ### Rest of the GUI widgets
 
@@ -179,6 +183,16 @@ class MainWindow(QtWidgets.QMainWindow, base.Component):
 
         actions['open'] = Action(Icons("document-open"), _("open"), self,
                                  shortcut=Keys.StandardKey.Open, statusTip=_("open-tooltip"))
+
+        recent_files = self.config.get_recent_files()
+
+        for i, file in enumerate(recent_files):
+            file_action = Action(f"{i}: {Path(file).stem}")
+            file_action.setVisible(True)
+            file_action.setData(normpath(file))
+            file_action.setToolTip(file)
+            actions['open_recent_{}'.format(i)] = file_action
+
 
         actions['close'] = Action(Icons("window-close"), _("close"), self,
                                   shortcut=Keys.StandardKey.Close, statusTip=_("close-tooltip"))
@@ -304,6 +318,8 @@ class MainWindow(QtWidgets.QMainWindow, base.Component):
 
 
     def updateActions(self):
+        if self._close_pending:   # do nothing. Wouldn't it be better to prevent updateAction?
+            return   
         ''' Update the available actions based on what is selected '''
 
         def there_are_blocks_in(selection):
@@ -359,6 +375,17 @@ class MainWindow(QtWidgets.QMainWindow, base.Component):
         file = Menu("&File")
         file.addAction(actions['new'])
         file.addAction(actions['open'])
+
+        recent = Menu(_("Recent"))
+        menus['recent'] = recent
+
+        for i in range(len(self.config.get_recent_files())):
+            recent.addAction(actions[f'open_recent_{i}'])
+        if recent.isEmpty():
+            recent.setDisabled(True)
+        file.addMenu(recent)
+        
+        #file.addAction(actions['open_recent'])
         file.addAction(actions['close'])
         file.addAction(actions['close_all'])
         file.addSeparator()
@@ -534,10 +561,8 @@ class MainWindow(QtWidgets.QMainWindow, base.Component):
     def new_triggered(self):
         log.debug('new file: not implemented, yet')
 
-    def open_triggered(self):
-        log.debug('open triggered')
-        filename = self.open()
 
+    def open_file(self, filename):          # TODO: we should normalize the file nmae somwhere
         if filename:
             log.info("Opening flowgraph ({0})".format(filename))
             new_flowgraph = FlowgraphView(self)
@@ -546,6 +571,41 @@ class MainWindow(QtWidgets.QMainWindow, base.Component):
             self.tabWidget.setCurrentIndex(self.tabWidget.count() - 1)
             self.currentFlowgraph.import_data(initial_state)
             self.currentFlowgraph.selectionChanged.connect(self.updateActions)
+
+
+    def open_triggered(self):
+        log.debug('open triggered')
+        filename = self.open()
+
+        self.open_file(filename)
+        self.config.add_recent_file(filename)
+    
+    def open_recent_triggered(self):
+        sender = QtCore.QObject.sender(self)
+        if type(sender) is QtGui.QAction:
+            filename = sender.data()
+            if filename in self.config.get_recent_files():
+                self.open_file(filename)
+                self.config.add_recent_file(filename)
+        else:
+            log.debug("got something different than a QAction")
+        pass
+
+    def recent_files_changed(self):  # update recent files sub menu
+        self.menus['recent'].clear()
+        for i, file in enumerate(self.config.get_recent_files()):
+            file_action = Action(f"{i}: {Path(file).stem}")
+            file_action.setVisible(True)
+            file_action.setData(normpath(file))
+            file_action.setToolTip(file)
+            action_name = 'open_recent_{}'.format(i)
+            self.actions[action_name] = file_action
+            self.menus['recent'].addAction(self.actions[action_name])
+            file_action.triggered.connect(self.open_recent_triggered)
+
+            
+
+
 
     def save_triggered(self):
         log.debug('save')
@@ -670,6 +730,8 @@ class MainWindow(QtWidgets.QMainWindow, base.Component):
     def exit_triggered(self):
         log.debug('exit: save not implemented, yet')
         # TODO: Make sure all flowgraphs have been saved 
+        self.config.save()  #save configuration
+
         self.app.exit()
 
     def help_triggered(self):
@@ -733,3 +795,7 @@ class MainWindow(QtWidgets.QMainWindow, base.Component):
 
     def help(self):
         log.debug('help not implemented, yet')
+
+    def closeEvent(self, a0):
+        self._close_pending = True
+        return super().closeEvent(a0)

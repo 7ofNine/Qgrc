@@ -179,8 +179,6 @@ class FlowgraphView(QtWidgets.QGraphicsView, base.Component): # added base.Compo
             super(FlowgraphView, self).mouseMoveEvent(event)
 
     def mouseReleaseEvent(self, event):
-        ts = datetime.datetime.now().timestamp()
-        log.debug("mouse released view {}".format(ts))
 
         if event.button() == Qt.MouseButton.LeftButton:
             self.mousePressed = False

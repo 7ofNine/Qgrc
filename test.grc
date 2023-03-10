@@ -23,6 +23,7 @@ options:
     sizing_mode: fixed
     thread_safe_setters: ''
     title: Vector averaging and median comparison
+    window_size: (1000,1000)
   states:
     bus_sink: false
     bus_source: false
@@ -66,7 +67,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [264, 128]
+    coordinate: [1064, 328.0]
     rotation: 0
     state: enabled
 

@@ -11,6 +11,9 @@ SPDX-License-Identifier: GPL-2.0-or-later
 import sys
 import os
 import configparser
+from time import gmtime, strftime
+
+from PyQt6.QtCore import pyqtSignal
 
 from ..core.Config import Config as CoreConfig
 from . import Constants
@@ -20,6 +23,8 @@ HEADER = """\
 #
 # GRC settings not accessible through the GUI are in config.conf under
 # section [grc].
+#
+# Last saved: {}
 
 """
 
@@ -29,7 +34,9 @@ class Config(CoreConfig):
     name = 'GNU Radio Companion'
 
     gui_prefs_file = os.environ.get(
-        'GRC_PREFS_PATH', os.path.expanduser('~/.gnuradio/grc.conf'))
+        'GRC_PREFS_PATH', os.path.expanduser('~/.gnuradio/grc.qt.conf'))              # changed to *.qt.conf possibly permanently not to interfere with the original grc.conf file
+
+    recent_files_changed = pyqtSignal()
 
     def __init__(self, install_prefix, *args, **kwargs):
         CoreConfig.__init__(self, *args, **kwargs)
@@ -50,7 +57,7 @@ class Config(CoreConfig):
     def save(self):
         try:
             with open(self.gui_prefs_file, 'w') as fp:
-                fp.write(HEADER)
+                fp.write(HEADER.format(strftime("%Y-%m-%d %H:%M:%S UTC", gmtime())))
                 self.parser.write(fp)
         except Exception as err:
             print(err, file=sys.stderr)
@@ -157,7 +164,11 @@ class Config(CoreConfig):
             if file_name in recent_files:
                 recent_files.remove(file_name)  # Attempt removal
             recent_files.insert(0, file_name)  # Insert at start
-            self.set_recent_files(recent_files[:10])  # Keep up to 10 files
+            self.set_recent_files(recent_files[:10])  # Keep up to 10 files    # make configurable
+
+            self.recent_files_changed.emit()
+    
+
 
     def console_window_position(self, pos=None):
         return self.entry('console_window_position', pos, default=-1) or 1
