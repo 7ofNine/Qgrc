@@ -10,7 +10,7 @@ SPDX-License-Identifier: GPL-2.0-or-later
 
 import math
 
-#from gi.repository import Gtk, Pango, PangoCairo
+from gi.repository import Gtk, Pango, PangoCairo
 
 from . import colors
 from .drawable import Drawable

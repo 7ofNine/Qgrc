@@ -9,11 +9,11 @@ SPDX-License-Identifier: GPL-2.0-or-later
 
 import sys
 import os
-from collections import ChainMap
 
 from .Config import Config
 from . import canvas
 from ..core.platform import Platform as CorePlatform
+from ..core.utils.backports import ChainMap
 
 
 class Platform(CorePlatform):

@@ -7,17 +7,19 @@ SPDX-License-Identifier: GPL-2.0-or-later
 """
 
 
-#from gi.repository import Gtk, Gdk, cairo
-from PyQt6.QtGui import QColor
+from gi.repository import Gtk, Gdk, cairo
 # import pycairo
 
 from .. import Constants
 
 
 def get_color(color_code):
-    color = QColor()
-    color.setNamedColor(color_code)
-    return color
+    color = Gdk.RGBA()
+    color.parse(color_code)
+    return color.red, color.green, color.blue, color.alpha
+    # chars_per_color = 2 if len(color_code) > 4 else 1
+    # offsets = range(1, 3 * chars_per_color + 1, chars_per_color)
+    # return tuple(int(color_code[o:o + 2], 16) / 255.0 for o in offsets)
 
 #################################################################################
 # fg colors

@@ -7,7 +7,7 @@ SPDX-License-Identifier: GPL-2.0-or-later
 """
 
 
-#from gi.repository import Gtk, Gdk
+from gi.repository import Gtk, Gdk
 
 from ..core.Constants import *
 
@@ -38,8 +38,8 @@ PARAM_FONT = "Sans 7.5"
 STATE_CACHE_SIZE = 42
 
 # Shared targets for drag and drop of blocks
-DND_TARGETS = []#[Gtk.TargetEntry.new('STRING', Gtk.TargetFlags.SAME_APP, 0),
-                #Gtk.TargetEntry.new('UTF8_STRING', Gtk.TargetFlags.SAME_APP, 1)]
+DND_TARGETS = [Gtk.TargetEntry.new('STRING', Gtk.TargetFlags.SAME_APP, 0),
+               Gtk.TargetEntry.new('UTF8_STRING', Gtk.TargetFlags.SAME_APP, 1)]
 
 # label constraint dimensions
 LABEL_SEPARATION = 3
