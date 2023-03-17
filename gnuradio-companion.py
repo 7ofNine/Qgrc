@@ -62,7 +62,8 @@ def check_blocks_path():
 
 
 def run_main():
-    script_path = os.path.dirname(os.path.abspath(__file__))
+    # determine how to run the grc application. Source tree vs. installation
+    script_path = os.path.dirname(os.path.abspath(__file__))  # path and directory to this module
     source_tree_subpath = "/grc/scripts"
 
     if not script_path.endswith(source_tree_subpath):
@@ -76,6 +77,6 @@ def run_main():
 
 
 if __name__ == '__main__':
-    #check_gnuradio_import()
+    check_gnuradio_import()
     check_blocks_path()
     run_main()

@@ -32,7 +32,7 @@ from .helpers.profiling import StopWatch
 
 # Logging
 # Setup the logger to use a different name than the file name
-log = logging.getLogger('grc.application')
+log = logging.getLogger(__name__)
 
 
 class Application(QtWidgets.QApplication):
@@ -43,10 +43,11 @@ class Application(QtWidgets.QApplication):
 
     def __init__(self, settings, platform):
         # Note. Logger must have the correct naming convention to share handlers
-        log.debug("__init__")
+        #log = logger.getChild(__name__)
 
         log.debug("Creating QApplication instance")
         QtWidgets.QApplication.__init__(self, settings.argv)
+        super().setQuitOnLastWindowClosed(True)
 
         # Save references to the global settings and gnuradio platform
         self.settings = settings

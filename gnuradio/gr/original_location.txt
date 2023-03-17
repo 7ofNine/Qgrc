@@ -1,11 +1,11 @@
-The original location in the gnuradio source tree is
+The original location in the gnuradio source tree is and is part of gnuradio-runtime i.e. not part of grc but needed
 
 ...\gnuradio\gnuradio-runtime\python\gnuradio\gr
 
 __init__.py
 exceptions.py
-gateway.py
-hier_block2.py
+gateway.py        // used by grc but mainly as wrappers for block generations  
+hier_block2.py    // not used by grc
 tag_utils.py
 top_block.py
 

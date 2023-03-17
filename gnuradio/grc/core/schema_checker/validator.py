@@ -10,7 +10,7 @@ from .utils import Message, Spec
 
 class Validator(object):
 
-    def __init__(self, scheme=None):
+    def __init__(self, scheme=None):  # set the scheme and init the Validator for yml
         self._path = []
         self.scheme = scheme
         self.messages = []

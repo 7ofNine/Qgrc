@@ -57,28 +57,28 @@ class Cache(object):
         if modtime <= self._converter_mtime:
             try:
                 cached = self.cache[filename]
-                if int(cached["cached-at"] + 0.5) >= modtime:
+                if int(cached["cached-at"] + 0.5) >= modtime:  # chached version is more recent than file version
                     return cached["data"]
                 logger.info(f"Cache for {filename} outdated, loading yaml")
             except KeyError:
                 pass
 
-        with open(filename, encoding='utf-8') as fp:
+        with open(filename, encoding='utf-8') as fp:           # load file version (in json) into cache       
             data = yaml.safe_load(fp)
         self.cache[filename] = {
             "cached-at": int(time.time()),
             "data": data
         }
-        self.need_cache_write = True
+        self.need_cache_write = True                            # cache is dirty, needs saving
         return data
 
     def save(self):
-        if not self.need_cache_write:
+        if not self.need_cache_write:                           # cache is not dirty       
             return
 
         logger.debug('Saving %d entries to json cache', len(self.cache))
         # Dumping to binary file is only supported for Python3 >= 3.6
-        with open(self.cache_file, 'w', encoding='utf8') as cache_file:
+        with open(self.cache_file, 'w', encoding='utf8') as cache_file:     # write cached data from memory to cache file in json format
             cache_content = {
                 "version": self.version,
                 "cached-at": self._cachetime,
@@ -91,9 +91,9 @@ class Cache(object):
         for filename in (set(self.cache) - self._accessed_items):
             del self.cache[filename]
 
-    def __enter__(self):
+    def __enter__(self):  # The with statement is executed this way (context manager)
         self.load()
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
+    def __exit__(self, exc_type, exc_val, exc_tb):   # the exit from the with statement (context manager)
         self.save()

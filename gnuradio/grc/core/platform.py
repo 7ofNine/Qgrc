@@ -220,7 +220,7 @@ class Platform(Element):
     # region loaders
     def load_block_description(self, data, file_path):
         log = logger.getChild('block_loader')
-
+        log.debug(f"Loading block descriptor {file_path}")
         # don't load future block format versions
         file_format = data['file_format']
         if file_format < 1 or file_format > Constants.BLOCK_DESCRIPTION_FILE_FORMAT_VERSION:
@@ -252,6 +252,7 @@ class Platform(Element):
 
     def load_domain_description(self, data, file_path):
         log = logger.getChild('domain_loader')
+        log.debug(f"Loading domain descriptor {file_path}")
         domain_id = data['id']
         if domain_id in self.domains:  # test against repeated keys
             log.debug('Domain "{}" already exists. Ignoring: %s', file_path)
@@ -287,7 +288,7 @@ class Platform(Element):
     def load_category_tree_description(self, data, file_path):
         """Parse category tree file and add it to list"""
         log = logger.getChild('tree_loader')
-        log.debug('Loading %s', file_path)
+        log.debug(f"Loading tree descriptor {file_path}")
         path = []
 
         def load_category(name, elements):
@@ -424,8 +425,8 @@ class Platform(Element):
             fg.import_data(data)
         return fg
 
-    def new_block_class(self, **data):
-        return blocks.build(**data)
+    def new_block_class(self, **data):   # create a new empty block from data 
+        return blocks.build(**data)      
 
     def make_block(self, parent, block_id, **kwargs):
         cls = self.block_classes[block_id]
@@ -438,3 +439,6 @@ class Platform(Element):
     def make_port(self, parent, **kwargs):
         cls = self.port_classes[kwargs.pop('cls_key', None)]
         return cls(parent, **kwargs)
+
+    def initial_graph(self):
+        return self.parse_flow_graph("")

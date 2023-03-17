@@ -35,11 +35,9 @@ LOG_LEVELS = {
 
 ### Load GNU Radio
 try:
-#    import dlltracer
-#    with dlltracer.Trace(out=sys.stdout):
     from gnuradio import gr
 except ImportError as ex:
-    # Throw a new exception with more information
+# Throw a new exception with more information
     print ("Cannot find GNU Radio! (Have you sourced the environment file?)", file=sys.stderr)
 
     # If this is a background session (i.e. not launched through a script), show a Tkinter error dialog.
@@ -68,6 +66,7 @@ log = logging.getLogger('gnuradio.grc')   # possibly needed for this project. Ne
 # This log level should be set to DEBUG so the logger itself catches everything.
 # The StreamHandler level can be set independently to choose what messages are sent to the console.
 # The default console logging should be WARNING
+# TODO: make logging level configurable
 log.setLevel(logging.DEBUG)
 
 

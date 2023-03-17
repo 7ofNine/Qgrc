@@ -50,6 +50,8 @@ class FlowgraphScene(QtWidgets.QGraphicsScene, base.Component, CoreFlowgraph):
         self.undoAction = self.undoStack.createUndoAction(self, "Undo")
         self.redoAction = self.undoStack.createRedoAction(self, "Redo")
 
+        self.dirty = False  # flag for flowgraph has changed has to be saved on close
+
 
     def update(self):
         """
@@ -348,5 +350,11 @@ class FlowgraphScene(QtWidgets.QGraphicsScene, base.Component, CoreFlowgraph):
         }[rotation]
         x, y = coor
         return x * cos_r + y * sin_r, -x * sin_r + y * cos_r
+
+    def set_initial_scene(self):
+        self.import_data(self.parent_platform.initial_graph())
+
+    def set_scene(self, filename):
+        self.import_data(self.parent_platform.parse_flow_graph(filename))
 
 

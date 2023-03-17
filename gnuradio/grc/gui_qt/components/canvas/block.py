@@ -35,7 +35,7 @@ class PropsDialog(QtWidgets.QDialog):
 
         categories = (p.category for p in self._block.params.values())
 
-        def unique_categories():
+        def unique_categories():    # determine set of categories of parameters   TODO:could be done at block loading time?
             seen = {Constants.DEFAULT_PARAM_TAB}
             yield Constants.DEFAULT_PARAM_TAB
             for cat in categories:
@@ -48,16 +48,16 @@ class PropsDialog(QtWidgets.QDialog):
         self.edit_params = []
 
         self.tabs = QtWidgets.QTabWidget()
-        for cat in unique_categories():
+        for cat in unique_categories():                  # one tab per paramater categories
             qvb = QtWidgets.QGridLayout()
             qvb.setAlignment(QtCore.Qt.AlignmentFlag.AlignTop)
-            qvb.setVerticalSpacing(5)
+            qvb.setVerticalSpacing(5)                    # TODO: should be constants 
             qvb.setHorizontalSpacing(20)
             i = 0
             for param in self._block.params.values():
                 if param.category == cat and param.hide != 'all':
                     qvb.addWidget(QtWidgets.QLabel(param.name), i, 0)
-                    if param.dtype == "enum" or param.options:
+                    if param.dtype == "enum" or param.options:    # for enum type parameter create dropdown for values
                         dropdown = QtWidgets.QComboBox()
                         for opt in param.options.values():
                             dropdown.addItem(opt)
@@ -72,7 +72,7 @@ class PropsDialog(QtWidgets.QDialog):
                             value_label = param.options[param.value] if param.value in param.options else param.value
                             dropdown.setCurrentText(value_label)
                     else:
-                        line_edit = QtWidgets.QLineEdit(param.value)
+                        line_edit = QtWidgets.QLineEdit(param.value)   # for single parameter values make value editable
                         line_edit.param = param
                         if f'dtype_{param.dtype}' in colors.LIGHT_THEME_STYLES:
                             line_edit.setStyleSheet(colors.LIGHT_THEME_STYLES[f'dtype_{param.dtype}'])
@@ -186,7 +186,8 @@ class Block(QtWidgets.QGraphicsItem, CoreBlock):
                 value = item.value
                 value_label = item.options[value] if value in item.options else value
                 if value is not None and item.hide == 'none':
-                    full_line_length = nameFontMetric.horizontalAdvance(name + ": ") + valueFontMetric.horizontalAdvance(value_label)
+                    value_elided = valueFontMetric.elidedText(value_label, QtCore.Qt.TextElideMode.ElideMiddle, 200)
+                    full_line_length = nameFontMetric.horizontalAdvance(name + ": ") + valueFontMetric.horizontalAdvance(value_elided)
                     if full_line_length > largest_width:
                         largest_width = float(full_line_length)
 
@@ -398,7 +399,8 @@ class Block(QtWidgets.QGraphicsItem, CoreBlock):
                 painter.setFont(valueFont)
                 x_offset = self.oriented_param_offset_x(writtenWidth) # advance to after the name
                 painter.save()
-                painter.drawText(self.transform_param(painter, QtCore.QRectF(x_offset, 0 + y_offset, self.width, self.height)), Qt.AlignmentFlag.AlignLeft, value_label)
+                value_elided = valueFontMetric.elidedText(value_label, QtCore.Qt.TextElideMode.ElideMiddle, 200)  # length has to be set to a usefull value. just a test
+                painter.drawText(self.transform_param(painter, QtCore.QRectF(x_offset, 0 + y_offset, self.width, self.height)), Qt.AlignmentFlag.AlignLeft, value_elided)
                 painter.restore()
                 y_offset += self.oriented_param_offset_y()#+= 20
 

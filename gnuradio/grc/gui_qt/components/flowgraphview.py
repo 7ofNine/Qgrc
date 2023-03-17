@@ -46,7 +46,7 @@ class FlowgraphView(QtWidgets.QGraphicsView, base.Component): # added base.Compo
         #else:
         self.initEmpty()
 
-        self.setScene(self.flowgraphScene)
+        self.setScene(self.flowgraphScene) # set scene in GraphicsView
         
         self.setBackgroundBrush(QtGui.QBrush(Qt.GlobalColor.white))
 
@@ -128,7 +128,9 @@ class FlowgraphView(QtWidgets.QGraphicsView, base.Component): # added base.Compo
         pass 
         #self.setSceneRect(0,0,DEFAULT_MAX_X, DEFAULT_MAX_Y)
 
-
+    def set_initial_state(self):
+        self.flowgraphScene.set_initial_scene()
+        
 
     def wheelEvent(self,  event):
         # TODO: Support multi touch drag and drop for scrolling through the view
@@ -227,4 +229,7 @@ class FlowgraphView(QtWidgets.QGraphicsView, base.Component): # added base.Compo
         self._dragged_block = None
         event.accept()
     '''
+
+    def load_graph(self, filename):
+        self.flowgraphScene.set_scene(filename)
 

@@ -135,18 +135,19 @@ class MainWindow(QtWidgets.QMainWindow, base.Component):
         self.registerToolBar(toolbars["run"])
 
         self.tabWidget = self.createTabWidget()
-
+        self.tabWidget.tabCloseRequested.connect(lambda index: self.close_triggered(index))
+        self.setCentralWidget(self.tabWidget)
 
         log.debug("Loading flowgraph model")
-        self.fg_view = FlowgraphView(self)                         # introduce better logical structure. Who should load the data. Scene -> update View. Or the view?                                     
-        initial_state = self.platform.parse_flow_graph("")         # the core platform parses
-        self.fg_view.flowgraphScene.import_data(initial_state)          # the flowgraphscene actually inports which is imediately forwarded to the core flowgraph and then all blocks are added to the scene. What about the connections??
+        fg_view = FlowgraphView(self)                         # introduce better logical structure. Who should load the data. Scene -> update View. Or the view?   
+        fg_view.set_initial_state()
         log.debug("Adding flowgraph view")                         
+        
         #TODO: Don't close if the tab has not been saved
-        self.tabWidget.tabCloseRequested.connect(lambda index: self.close_triggered(index))
-        self.tabWidget.addTab(self.fg_view, "Untitled")
-        self.setCentralWidget(self.tabWidget)
-        self.currentFlowgraph.selectionChanged.connect(self.updateActions)
+        
+        self.tabWidget.addTab(fg_view, "Untitled")
+        
+        self.currentFlowgraph.selectionChanged.connect(self.updateActions)  # it's actually the current flowgraph in the tabwidget
         #self.new_tab(self.flowgraph)
 
     '''def show(self):
@@ -562,15 +563,15 @@ class MainWindow(QtWidgets.QMainWindow, base.Component):
         log.debug('new file: not implemented, yet')
 
 
-    def open_file(self, filename):          # TODO: we should normalize the file nmae somwhere
+    def open_file(self, filename):         
         if filename:
             log.info("Opening flowgraph ({0})".format(filename))
             new_flowgraph = FlowgraphView(self)
-            initial_state = self.platform.parse_flow_graph(filename)
-            self.tabWidget.addTab(new_flowgraph, os.path.basename(filename))
+            new_flowgraph.load_graph(filename)
+            new_flowgraph.flowgraphScene.selectionChanged.connect(self.updateActions)
+            self.tabWidget.addTab(new_flowgraph, str(os.path.basename(filename)).removesuffix(".grc"))
             self.tabWidget.setCurrentIndex(self.tabWidget.count() - 1)
-            self.currentFlowgraph.import_data(initial_state)
-            self.currentFlowgraph.selectionChanged.connect(self.updateActions)
+            self.tabWidget.setTabToolTip(self.tabWidget.currentIndex(), filename)
 
 
     def open_triggered(self):
@@ -731,7 +732,6 @@ class MainWindow(QtWidgets.QMainWindow, base.Component):
         log.debug('exit: save not implemented, yet')
         # TODO: Make sure all flowgraphs have been saved 
         self.config.save()  #save configuration
-
         self.app.exit()
 
     def help_triggered(self):
@@ -797,5 +797,6 @@ class MainWindow(QtWidgets.QMainWindow, base.Component):
         log.debug('help not implemented, yet')
 
     def closeEvent(self, a0):
+        log.debug('close event not implemented, yet')
         self._close_pending = True
         return super().closeEvent(a0)

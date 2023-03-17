@@ -16,12 +16,13 @@ from ._build import build
 build_ins = {}
 
 
-def register_build_in(cls):
+def register_build_in(cls):       # used as decorator
     cls.loaded_from = '(build-in)'
     build_ins[cls.key] = cls
     return cls
 
 
+# import all the build in blocks
 from .dummy import DummyBlock
 from .embedded_python import EPyBlock, EPyModule
 from .virtual import VirtualSink, VirtualSource
