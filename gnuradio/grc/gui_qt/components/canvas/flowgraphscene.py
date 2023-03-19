@@ -20,7 +20,7 @@ import logging
 import datetime
 
 from PyQt6 import QtGui, QtCore, QtWidgets
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import Qt, pyqtSignal
 
 from itertools import count
 
@@ -34,7 +34,11 @@ from ... import Constants
 log = logging.getLogger(__name__)
 
 
+
 class FlowgraphScene(QtWidgets.QGraphicsScene, base.Component, CoreFlowgraph):
+
+    flowgraph_changed = pyqtSignal()
+
     def __init__(self):
         super(FlowgraphScene, self).__init__()
         self.parent = self.platform
@@ -58,10 +62,15 @@ class FlowgraphScene(QtWidgets.QGraphicsScene, base.Component, CoreFlowgraph):
         Call the top level rewrite and validate.
         Call the top level create labels and shapes.  
         """
+        
         self.rewrite()
         self.validate()
         for block in self.blocks:
             block.create_shapes_and_labels()
+
+        if not self.dirty:
+            self.flowgraph_changed.emit()   # emit flowgraphscene changed
+        self.dirty = True
         #self.update_elements_to_draw()
         #self.create_labels()
         #self.create_shapes()
@@ -356,5 +365,18 @@ class FlowgraphScene(QtWidgets.QGraphicsScene, base.Component, CoreFlowgraph):
 
     def set_scene(self, filename):
         self.import_data(self.parent_platform.parse_flow_graph(filename))
+        self.grc_file_path = filename  #preserve file name
+
+    def save(self, filename):
+        self.parent_platform.save_flow_graph(self, filename)
+
+    def is_dirty(self):
+        return self.dirty
+
+    def reset_dirty(self):
+        self.dirty = False
+
+    def get_filepath(self):
+        return self.grc_file_path
 
 

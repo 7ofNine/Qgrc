@@ -347,7 +347,7 @@ class Platform(Element):
 
         return data
 
-    def save_flow_graph(self, filename, flow_graph):
+    def save_flow_graph(self, flow_graph, filename):
         data = flow_graph.export_data()
 
         try:

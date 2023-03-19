@@ -232,4 +232,15 @@ class FlowgraphView(QtWidgets.QGraphicsView, base.Component): # added base.Compo
 
     def load_graph(self, filename):
         self.flowgraphScene.set_scene(filename)
+    
+    def save(self, filename):
+        self.flowgraphScene.save(filename)
 
+    def is_dirty(self):
+        return self.flowgraphScene.is_dirty()
+
+    def reset_dirty(self):
+        self.flowgraphScene.reset_dirty()
+
+    def get_filepath(self):
+        return self.flowgraphScene.get_filepath()

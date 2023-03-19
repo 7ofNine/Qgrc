@@ -28,8 +28,9 @@ from os.path import normpath
 # Third-party  modules
 
 from PyQt6 import QtCore, QtGui, QtWidgets
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import Qt, pyqtSlot
 from PyQt6.QtGui import QStandardItemModel
+from PyQt6.QtGui import QColorConstants
 
 # Custom modules
 from . import FlowgraphView
@@ -37,6 +38,7 @@ from .. import base
 from . import RotateCommand
 from . import ErrorsDialog
 from .canvas.block import PropsDialog
+#from .import SaveOnCloseDialog
 
 # Logging
 log = logging.getLogger(__name__)
@@ -48,6 +50,15 @@ Toolbar = QtWidgets.QToolBar
 Icons = QtGui.QIcon.fromTheme
 Keys = QtGui.QKeySequence
 QStyle = QtWidgets.QStyle
+
+class SaveOnCloseDialog(QtWidgets.QMessageBox):
+
+    def __init__(self):
+        super().__init__()
+        
+        self.setText("Unsaved changes!")
+        self.setInformativeText("Would you like to save changes before closing")
+        self.setStandardButtons(QtWidgets.QMessageBox.StandardButton.Cancel|QtWidgets.QMessageBox.StandardButton.Save|QtWidgets.QMessageBox.StandardButton.Discard)
 
 
 class MainWindow(QtWidgets.QMainWindow, base.Component):
@@ -135,7 +146,8 @@ class MainWindow(QtWidgets.QMainWindow, base.Component):
         self.registerToolBar(toolbars["run"])
 
         self.tabWidget = self.createTabWidget()
-        self.tabWidget.tabCloseRequested.connect(lambda index: self.close_triggered(index))
+        self.tabWidget.tabCloseRequested.connect(self.close_triggered)
+        self.tabWidget.currentChanged.connect(self.current_tab_changed)
         self.setCentralWidget(self.tabWidget)
 
         log.debug("Loading flowgraph model")
@@ -521,10 +533,16 @@ class MainWindow(QtWidgets.QMainWindow, base.Component):
                                filter='Flow Graph Files (*.grc);;All files (*.*)')
         return filename
 
-    def save(self):
+    def save(self, filename = None):
+        if filename == "":
+            filter = '*.grc'
+        else:
+            filter = filename
         Save = QtWidgets.QFileDialog.getSaveFileName
-        filename, filtr = Save(self, self.actions['save'].statusTip(),
-                               filter='Flow Graph Files (*.grc);;All files (*.*)')
+        filename, filtr = Save(self, self.actions['save'].statusTip(), filter)
+
+                               #filter='Flow Graph Files (*.grc);;All files (*.*)')
+                               
         return filename
 
     # Overridden methods
@@ -569,11 +587,12 @@ class MainWindow(QtWidgets.QMainWindow, base.Component):
             new_flowgraph = FlowgraphView(self)
             new_flowgraph.load_graph(filename)
             new_flowgraph.flowgraphScene.selectionChanged.connect(self.updateActions)
+            new_flowgraph.flowgraphScene.flowgraph_changed.connect(self.flowgraph_changed)
             self.tabWidget.addTab(new_flowgraph, str(os.path.basename(filename)).removesuffix(".grc"))
             self.tabWidget.setCurrentIndex(self.tabWidget.count() - 1)
             self.tabWidget.setTabToolTip(self.tabWidget.currentIndex(), filename)
 
-
+    @pyqtSlot()
     def open_triggered(self):
         log.debug('open triggered')
         filename = self.open()
@@ -581,6 +600,7 @@ class MainWindow(QtWidgets.QMainWindow, base.Component):
         self.open_file(filename)
         self.config.add_recent_file(filename)
     
+    @pyqtSlot()
     def open_recent_triggered(self):
         sender = QtCore.QObject.sender(self)
         if type(sender) is QtGui.QAction:
@@ -592,6 +612,7 @@ class MainWindow(QtWidgets.QMainWindow, base.Component):
             log.debug("got something different than a QAction")
         pass
 
+    @pyqtSlot()
     def recent_files_changed(self):  # update recent files sub menu
         self.menus['recent'].clear()
         for i, file in enumerate(self.config.get_recent_files()):
@@ -604,36 +625,82 @@ class MainWindow(QtWidgets.QMainWindow, base.Component):
             self.menus['recent'].addAction(self.actions[action_name])
             file_action.triggered.connect(self.open_recent_triggered)
 
-            
-
-
-
+    @pyqtSlot()
     def save_triggered(self):
-        log.debug('save')
+        current_index = self.tabWidget.currentIndex()
+        log.debug(f'Saving tab {current_index}')
+        if current_index == -1:
+            pass 
+        else:
+            if self.currentFlowgraph.is_dirty():    # check if we have to save
+                try:
+                    #filename = self.save(str(os.path.basename(self.currentFlowgraph.get_filepath())))              # get filename for saving
+                    filename = self.currentFlowgraph.get_filepath()
+                    if bool(filename):
+                        self.currentFlowgraph.save(filename) 
+                        self.flowgraph_saved()  # update other data
+                        log.info(f'Saved flowgraph {filename}')
+                    else:
+                        log.debug("Save flowgraph cancelled")
+                        return
+                except IOError:
+                    log.error(f'Save failed for {filename}: ' +str(IOError))
+                log.info(f"Flowgraph {filename} saved")
+            else:
+                log.debug("Save flowgraph triggered but graph was not dirty")
 
+
+    @pyqtSlot()
     def save_as_triggered(self):
-        log.debug('save as')
-        filename = self.save()
-
-        if filename:
+        log.debug('save as triggered')
+        filename = self.save()  # get file save name
+        if bool(filename):
             try:
                 self.file_path = filename
-                self.platform.save_flow_graph(filename, self.fg_view)
+                self.currentFlowgraph.save(filename)
+                self.flowgraph_saved() # update other data
+                self.update_tab(filename)
+                self.config.add_recent_file(filename) #update recent files list
             except IOError:
-                log.error('Save failed')
-
-        log.info(filename)
-
-    def close_triggered(self, tab_index=None):           # tab is being closed
-        log.debug('close a tab')
-        if tab_index is None:
-            self.tabWidget.removeTab(self.tabWidget.currentIndex())   # when would that happen ?
+                log.error(f'Save as failed for {filename}')
         else:
-            # TODO: Only if saved            i.e. keep a changed to be saved status flag for saving to *.grc file 
-            self.tabWidget.removeTab(tab_index)
+            log.debug("Save flowgraph as cancelled")
+            return
+        log.info(f"Flowgraph saved as {filename}")
 
+    @pyqtSlot(int)
+    def close_triggered(self, index):           # tab is being closed why does index not contain the current (closing) tab??
+                                                # TODO: extend by dialog for save confirmation
+        current_index = self.tabWidget.currentIndex()
+        log.debug(f'Closing tab {current_index}')
+        if current_index == -1:
+            pass 
+        else:
+            if self.currentFlowgraph.is_dirty():    # check if we have to save
+                question = SaveOnCloseDialog()
+                result = question.exec()
+                if result == QtWidgets.QMessageBox.StandardButton.Save:
+                    filename = self.save(str(os.path.basename(self.currentFlowgraph.get_filepath())))           # get filename for saving
+                    self.currentFlowgraph.save(filename) 
+                elif result == QtWidgets.QMessageBox.StandardButton.Discard:
+                    pass
+                elif result == QtWidgets.QMessageBox.StandardButton.Cancel:
+                    return
+            self.tabWidget.removeTab(current_index)
+
+
+    @pyqtSlot()
     def close_all_triggered(self):
-        log.debug('close all: not implemented, yet')
+        # TODO: extend by dialog for save confirmation
+        log.debug('close all')
+        while self.tabWidget.count() > 0:
+            flowgraphview = self.tabWidget.widget(0)
+            if flowgraphview.is_dirty():    # check if we have to save
+                filename = self.save(str(os.path.basename(flowgraphview.get_filepath())))              # get filename for saving
+                flowgraphview.save(filename) # TODO: add dialog for file already exists ?   
+            self.tabWidget.removeTab(0)
+
+
 
     def print_triggered(self):
         log.debug('print: not implemented,yet')
@@ -641,11 +708,13 @@ class MainWindow(QtWidgets.QMainWindow, base.Component):
     def screen_capture_triggered(self):
         log.debug('screen capture: not implemented, yet')
 
+    @pyqtSlot()
     def undo_triggered(self):
         log.debug('undo')
         self.currentFlowgraph.undoStack.undo()
         self.updateActions()
-
+    
+    @pyqtSlot()
     def redo_triggered(self):
         log.debug('redo')
         self.currentFlowgraph.undoStack.redo()
@@ -660,62 +729,73 @@ class MainWindow(QtWidgets.QMainWindow, base.Component):
     def paste_triggered(self):
         log.debug('paste: not implemented, yet')
 
+    @pyqtSlot()
     def delete_triggered(self):
         log.debug('delete')
         self.currentFlowgraph.delete_selected()
 
+    @pyqtSlot()
     def rotate_ccw_triggered(self):
         log.debug('rotate_ccw')
         rotateCommand = RotateCommand(self.currentFlowgraph, -90)
         self.currentFlowgraph.undoStack.push(rotateCommand)
         self.updateActions()
-
+    
+    @pyqtSlot()
     def rotate_cw_triggered(self):
         log.debug('rotate_cw')
         rotateCommand = RotateCommand(self.currentFlowgraph, 90)
         self.currentFlowgraph.undoStack.push(rotateCommand)
         self.updateActions()
 
+    @pyqtSlot()
     def errors_triggered(self):
         errorDialog = ErrorsDialog(self, self.currentFlowgraph)
         errorDialog.exec()
-
+    
+    @pyqtSlot()
     def find_triggered(self):
         log.debug('find block')
         self._app().BlockLibrary._search_bar.setFocus()
-
+    
+    @pyqtSlot()
     def about_triggered(self):
         log.debug('about')
         self.about()
-
+    
+    @pyqtSlot()
     def about_qt_triggered(self):
         log.debug('about_qt')
         QtWidgets.QApplication.instance().aboutQt()
-
+    
+    @pyqtSlot()
     def properties_triggered(self):
         log.debug('properties')
         for block in self.currentFlowgraph.selected_blocks():
             props = PropsDialog(block)
             props.exec()
 
-
+    @pyqtSlot()
     def enable_triggered(self):
         log.debug('enable')
         for block in self.currentFlowgraph.selected_blocks():
             block.state = 'enabled'
             block.create_shapes_and_labels()
 
+    @pyqtSlot()
     def disable_triggered(self):
         log.debug('disable')
         for block in self.currentFlowgraph.selected_blocks():
             block.state = 'disabled'
             block.create_shapes_and_labels()
 
+    @pyqtSlot()
     def execute_triggered(self):
         log.debug('execute')
         py_path = self.file_path[0:-3] + 'py'
         subprocess.Popen(f'/usr/bin/python {py_path}', shell=True)
-
+    
+    @pyqtSlot()
     def generate_triggered(self):
         log.debug('generate')
         generator = self.platform.Generator(self.currentFlowgraph, os.path.dirname(self.file_path))
@@ -729,11 +809,13 @@ class MainWindow(QtWidgets.QMainWindow, base.Component):
         log.debug('preferences')
 
     def exit_triggered(self):
+        #TODO: save confirmation request dialog
         log.debug('exit: save not implemented, yet')
         # TODO: Make sure all flowgraphs have been saved 
         self.config.save()  #save configuration
         self.app.exit()
-
+    
+    @pyqtSlot()
     def help_triggered(self):
         log.debug('help')
         self.help()
@@ -749,20 +831,25 @@ class MainWindow(QtWidgets.QMainWindow, base.Component):
 
     def library_toggled(self):
         log.debug('library_toggled')
-
+    
+    @pyqtSlot()
     def select_all_triggered(self):
         log.warning('select all')
         self.currentFlowgraph.select_all()
-
+    
+    @pyqtSlot()
     def bypass_triggered(self):
         log.warning('bypass')
 
+    @pyqtSlot()
     def vertical_align_top_triggered(self):
         log.warning('vertical align top')
 
+    @pyqtSlot()
     def vertical_align_middle_triggered(self):
         log.warning('vertical align middle')
 
+    @pyqtSlot()
     def vertical_align_bottom_triggered(self):
         log.warning('vertical align bottom')
 
@@ -796,7 +883,31 @@ class MainWindow(QtWidgets.QMainWindow, base.Component):
     def help(self):
         log.debug('help not implemented, yet')
 
+    
     def closeEvent(self, a0):
         log.debug('close event not implemented, yet')
+        #TODO: 
+        #TODO: check for files to be saved!
         self._close_pending = True
         return super().closeEvent(a0)
+
+    @pyqtSlot(int)
+    def current_tab_changed(self, tabindex):
+        self.actions['save'].setEnabled(self.currentFlowgraph.is_dirty())
+
+    @pyqtSlot()
+    def flowgraph_changed(self):
+        self.actions['save'].setEnabled(True)
+        current_index = self.tabWidget.currentIndex();
+        self.tabWidget.tabBar().setTabTextColor(current_index,QColorConstants.Red)
+
+    @pyqtSlot()
+    def flowgraph_saved(self):
+        self.currentFlowgraph.reset_dirty()
+        self.actions['save'].setEnabled(False)
+        current_index = self.tabWidget.currentIndex();
+        self.tabWidget.tabBar().setTabTextColor(current_index,QColorConstants.Black)
+
+    def update_tab(self, filename):
+        current_index = self.tabWidget.currentIndex();
+        self.tabWidget.setTabText(current_index,str(os.path.basename(filename)).removesuffix(".grc"))

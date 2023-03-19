@@ -28,7 +28,7 @@ options:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [592, 20.0]
+    coordinate: [592.0, 44.0]
     rotation: 0
     state: enabled
 
@@ -49,7 +49,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [16, 272]
+    coordinate: [48.0, 197.0]
     rotation: 0
     state: enabled
 - name: blocks_add_xx_0
@@ -67,7 +67,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [1064, 328.0]
+    coordinate: [1064.0, 328.0]
     rotation: 0
     state: enabled
 
@@ -76,3 +76,4 @@ connections:
 
 metadata:
   file_format: 1
+  grc_version: g3259f3d9
