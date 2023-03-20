@@ -146,16 +146,12 @@ class MainWindow(QtWidgets.QMainWindow, base.Component):
         self.registerToolBar(toolbars["run"])
 
         self.tabWidget = self.createTabWidget()
-        self.tabWidget.tabCloseRequested.connect(self.close_triggered)
-        self.tabWidget.currentChanged.connect(self.current_tab_changed)
         self.setCentralWidget(self.tabWidget)
 
         log.debug("Loading flowgraph model")
         fg_view = FlowgraphView(self)                         # introduce better logical structure. Who should load the data. Scene -> update View. Or the view?   
         fg_view.set_initial_state()
         log.debug("Adding flowgraph view")                         
-        
-        #TODO: Don't close if the tab has not been saved
         
         self.tabWidget.addTab(fg_view, "Untitled")
         
@@ -171,6 +167,8 @@ class MainWindow(QtWidgets.QMainWindow, base.Component):
         tabWidget.setTabsClosable(True)
         tabWidget.setTabBarAutoHide(True)
         tabWidget.setElideMode(QtCore.Qt.TextElideMode.ElideLeft)
+        tabWidget.tabCloseRequested.connect(self.close_triggered)
+        tabWidget.currentChanged.connect(self.current_tab_changed)
 
         return tabWidget
 
@@ -328,6 +326,7 @@ class MainWindow(QtWidgets.QMainWindow, base.Component):
         actions['enable'].setEnabled(False)
         actions['disable'].setEnabled(False)
         actions['bypass'].setEnabled(False)
+        actions['properties'].setEnabled(False)
 
 
     def updateActions(self):
@@ -578,7 +577,11 @@ class MainWindow(QtWidgets.QMainWindow, base.Component):
 
     # Action Handlers
     def new_triggered(self):
-        log.debug('new file: not implemented, yet')
+        log.debug('new triggered')
+        fg_view = FlowgraphView(self)
+        fg_view.set_initial_state()
+        self.tabWidget.addTab(fg_view, "Untitled")
+
 
 
     def open_file(self, filename):         
@@ -668,8 +671,8 @@ class MainWindow(QtWidgets.QMainWindow, base.Component):
             return
         log.info(f"Flowgraph saved as {filename}")
 
-    @pyqtSlot(int)
-    def close_triggered(self, index):           # tab is being closed why does index not contain the current (closing) tab??
+    @pyqtSlot()
+    def close_triggered(self):           # tab is being closed why does index not contain the current (closing) tab??
                                                 # TODO: extend by dialog for save confirmation
         current_index = self.tabWidget.currentIndex()
         log.debug(f'Closing tab {current_index}')
@@ -686,7 +689,16 @@ class MainWindow(QtWidgets.QMainWindow, base.Component):
                     pass
                 elif result == QtWidgets.QMessageBox.StandardButton.Cancel:
                     return
-            self.tabWidget.removeTab(current_index)
+
+            if self.tabWidget.count() == 1:
+                self.tabWidget.blockSignals(True)                              # work around for problem when closing last tab
+                self.tabWidget.removeTab(current_index)                        # causes crash. Nowhere described 
+                self.tabWidget.blockSignals(False)
+            else:
+                self.tabWidget.removeTab(current_index)
+
+            if self.tabWidget.count() == 0:
+                self.new_triggered()
 
 
     @pyqtSlot()
@@ -697,9 +709,15 @@ class MainWindow(QtWidgets.QMainWindow, base.Component):
             flowgraphview = self.tabWidget.widget(0)
             if flowgraphview.is_dirty():    # check if we have to save
                 filename = self.save(str(os.path.basename(flowgraphview.get_filepath())))              # get filename for saving
-                flowgraphview.save(filename) # TODO: add dialog for file already exists ?   
-            self.tabWidget.removeTab(0)
-
+                flowgraphview.save(filename) # TODO: add dialog for file already exists ?  
+            if self.tabWidget.count() == 1:
+                self.tabWidget.blockSignals(True)                              # work around for problem when closing last tab
+                self.tabWidget.removeTab(0)                        # causes crash. Nowhere described 
+                self.tabWidget.blockSignals(False)
+            else:
+                self.tabWidget.removeTab(0)
+        
+        self.new_triggered()
 
 
     def print_triggered(self):
@@ -911,3 +929,26 @@ class MainWindow(QtWidgets.QMainWindow, base.Component):
     def update_tab(self, filename):
         current_index = self.tabWidget.currentIndex();
         self.tabWidget.setTabText(current_index,str(os.path.basename(filename)).removesuffix(".grc"))
+
+    def contextMenuEvent(self, event):
+        #QtGui.QContextMenuEvent
+        #return super().contextMenuEvent(event)
+        menu = QtWidgets.QMenu()
+        menu.addAction(self.actions["cut"])
+        menu.addAction(self.actions["copy"])
+        menu.addAction(self.actions["paste"])
+        menu.addAction(self.actions["delete"])
+        menu.addSeparator()
+        menu.addAction(self.actions['rotate_ccw'])
+        menu.addAction(self.actions['rotate_cw'])
+        menu.addAction(self.actions['enable'])
+        menu.addAction(self.actions['disable'])
+        menu.addAction(self.actions['bypass'])
+        menu.addSeparator()
+
+        more = QtWidgets.QMenu("More")
+        menu.addMenu(more)
+        menu.addSeparator()
+        menu.addAction(self.actions['properties']) 
+
+        menu.exec(event.globalPos())
