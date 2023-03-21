@@ -168,7 +168,7 @@ class MainWindow(QtWidgets.QMainWindow, base.Component):
         tabWidget.setTabBarAutoHide(True)
         tabWidget.setElideMode(QtCore.Qt.TextElideMode.ElideLeft)
         tabWidget.tabCloseRequested.connect(self.close_triggered)
-        tabWidget.currentChanged.connect(self.current_tab_changed)
+        tabWidget.currentChanged.connect(self.updateActions)
 
         return tabWidget
 
@@ -216,6 +216,8 @@ class MainWindow(QtWidgets.QMainWindow, base.Component):
         actions['save_as'] = Action(Icons("document-save-as"), _("save_as"), self,
                                     shortcut=Keys.StandardKey.SaveAs, statusTip=_("save_as-tooltip"))
 
+        actions['save_copy'] = Action(_("save_copy"), self)
+
         actions['print'] = Action(Icons('document-print'), _("print"), self,
                                   shortcut=Keys.StandardKey.Print, statusTip=_("print-tooltip"))
 
@@ -232,6 +234,8 @@ class MainWindow(QtWidgets.QMainWindow, base.Component):
         actions['redo'] = Action(Icons('edit-redo'), _("redo"), self,
                                  shortcut=Keys.StandardKey.Redo, statusTip=_("redo-tooltip"))
 
+        actions['view_undo_stack'] = Action("View undo stack", self)
+
         actions['cut'] = Action(Icons('edit-cut'), _("cut"), self,
                                 shortcut=Keys.StandardKey.Cut, statusTip=_("cut-tooltip"))
 
@@ -246,6 +250,9 @@ class MainWindow(QtWidgets.QMainWindow, base.Component):
 
         actions['select_all'] = Action(Icons('edit-select_all'), _("select_all"), self,
                                    shortcut=Keys.StandardKey.SelectAll, statusTip=_("select_all-tooltip"))
+        
+        actions['select_none'] = Action(_("Select None"), self,
+                                        statusTip=_("select_none-tooltip"))
 
         actions['rotate_ccw'] = Action(Icons('object-rotate-left'), _("rotate_ccw"), self,
                                        shortcut=Keys.StandardKey.MoveToPreviousChar,
@@ -278,6 +285,13 @@ class MainWindow(QtWidgets.QMainWindow, base.Component):
                                        self, statusTip=_("flowgraph-properties-tooltip"))
 
         # View Actions
+        actions['snap_to_grid'] = Action(_("snap_to_grid"), self)
+        actions['snap_to_grid'].setCheckable(True)
+        
+        actions['toggle_grid'] = Action(_("toggle_grid"), self, shortcut='G',
+                                    statusTip=_("toggle_grid-tooltip"))
+
+
         actions['errors'] = Action(Icons('dialog-error'), _("errors"), self, shortcut='E',
                                    statusTip=_("errors-tooltip"))
 
@@ -307,10 +321,34 @@ class MainWindow(QtWidgets.QMainWindow, base.Component):
 
         actions['types'] = Action("Types", self)
 
+        actions['keys'] = Action(_("&Keys"), self)
+
+        actions['parser_errors'] = Action("Parser Errors", self)
+
+        actions['get_involved'] = Action(_("&Get Involved"), self)
+
+        actions['preferences'] = Action(Icons('preferences-system'), _("preferences"), self,
+                                        statusTip=_("preferences-tooltip"))
+        
+        actions['reload'] = Action(Icons('view-refresh'), _("reload"), self,
+                                        statusTip=_("reload-tooltip"))
 
 
         actions['preferences'] = Action(Icons('preferences-system'), _("preferences"), self,
                                         statusTip=_("preferences-tooltip"))
+
+        # Tools Actions
+
+        actions['filter_design_tool'] = Action(_("&Filter Design Tool"), self)
+
+        actions['set_default_qt_gui_theme'] = Action(_("Set Default &Qt GUI Theme"), self)
+
+        actions['module_browser'] = Action(_("&OOT Module Browser"), self)
+
+        actions['show_flowgraph_complexity'] = Action(_("show_flowgraph_complexity"), self)
+        actions['show_flowgraph_complexity'].setCheckable(True)
+
+
 
         # Disable some actions, by default
         actions['save'].setEnabled(False)
@@ -329,30 +367,31 @@ class MainWindow(QtWidgets.QMainWindow, base.Component):
         actions['properties'].setEnabled(False)
 
 
-    def updateActions(self):
+    def updateActions(self):      # don't call if there is no currentFlowgraph!
         if self._close_pending:   # do nothing. Wouldn't it be better to prevent updateAction?
             return   
         ''' Update the available actions based on what is selected '''
 
-        def there_are_blocks_in(selection):
-            for element in selection:
-                if element.is_block:
-                    return True
-            return False
-
-        def there_are_connections_in(selection):
-            for element in selection:
-                if element.is_connection:
-                    return True
-            return False
-
-        selected_elements = self.currentFlowgraph.selectedItems()
+        # get status data
+        blocks = self.currentFlowgraph.selected_blocks()
+        conns = self.currentFlowgraph.selected_connections()
         undoStack = self.currentFlowgraph.undoStack
         canUndo = undoStack.canUndo()
         canRedo = undoStack.canRedo()
+        valid_fg = self.currentFlowgraph.is_valid()
+        dirty_fg = self.currentView.is_dirty()
+
+        self.actions['save'].setEnabled(dirty_fg)
 
         self.actions['undo'].setEnabled(canUndo)
         self.actions['redo'].setEnabled(canRedo)
+
+        self.actions['generate'].setEnabled(valid_fg)
+        self.actions['execute'].setEnabled(valid_fg)
+        self.actions['errors'].setEnabled(not valid_fg)
+        self.actions['kill'].setEnabled(False) # TODO: Set this properly. When to set true?
+
+        # default block actions
         self.actions['cut'].setEnabled(False)
         self.actions['copy'].setEnabled(False)
         self.actions['paste'].setEnabled(False)
@@ -362,19 +401,58 @@ class MainWindow(QtWidgets.QMainWindow, base.Component):
         self.actions['enable'].setEnabled(False)
         self.actions['disable'].setEnabled(False)
         self.actions['bypass'].setEnabled(False)
+        self.actions['properties'].setEnabled(False)
+        self.actions['create_hier'].setEnabled(False)
+        self.actions['toggle_source_bus'].setEnabled(False)
+        self.actions['toggle_sink_bus'].setEnabled(False)
+        
+        self.actions['vertical_align_top'].setEnabled(False)
+        self.actions['vertical_align_middle'].setEnabled(False)
+        self.actions['vertical_align_bottom'].setEnabled(False)
 
-        if there_are_connections_in(selected_elements):
+        self.actions['horizontal_align_left'].setEnabled(False)
+        self.actions['horizontal_align_center'].setEnabled(False)
+        self.actions['horizontal_align_right'].setEnabled(False)
+
+
+        #if self.clipboard:                                 #TODO: setup clipboard
+        #    self.actions['paste'].setEnabled(True)
+
+        if conns:
             self.actions['delete'].setEnabled(True)
 
-        if there_are_blocks_in(selected_elements):
+        if blocks:
             self.actions['cut'].setEnabled(True)
             self.actions['copy'].setEnabled(True)
-            self.actions['paste'].setEnabled(True)
             self.actions['delete'].setEnabled(True)
             self.actions['rotate_cw'].setEnabled(True)
             self.actions['rotate_ccw'].setEnabled(True)
             self.actions['enable'].setEnabled(True)
             self.actions['disable'].setEnabled(True)
+            self.actions['bypass'].setEnabled(True)     #TODO: isn't ther a condition??
+            self.actions['toggle_source_bus'].setEnabled(True)
+            self.actions['toggle_sink_bus'].setEnabled(True)
+
+
+            if len(blocks) == 1:
+                self.actions['properties'].setEnabled(True)
+                self.actions['create_hier'].setEnabled(True) # TODO: Other requirements for enabling this?
+
+            if len(blocks) > 1:
+                self.actions['vertical_align_top'].setEnabled(True)
+                self.actions['vertical_align_middle'].setEnabled(True)
+                self.actions['vertical_align_bottom'].setEnabled(True)
+
+                self.actions['horizontal_align_left'].setEnabled(True)
+                self.actions['horizontal_align_center'].setEnabled(True)
+                self.actions['horizontal_align_right'].setEnabled(True)
+
+            for block in blocks:
+                if not block.can_bypass():
+                    self.actions['bypass'].setEnabled(False)
+                    break
+
+
 
     def createMenus(self, actions, menus):
         ''' Setup the main menubar for the application '''
@@ -581,6 +659,7 @@ class MainWindow(QtWidgets.QMainWindow, base.Component):
         fg_view = FlowgraphView(self)
         fg_view.set_initial_state()
         self.tabWidget.addTab(fg_view, "Untitled")
+        self.tabWidget.setCurrentIndex(self.tabWidget.count() - 1)
 
 
 
@@ -691,9 +770,9 @@ class MainWindow(QtWidgets.QMainWindow, base.Component):
                     return
 
             if self.tabWidget.count() == 1:
-                self.tabWidget.blockSignals(True)                              # work around for problem when closing last tab
-                self.tabWidget.removeTab(current_index)                        # causes crash. Nowhere described 
-                self.tabWidget.blockSignals(False)
+                self.tabWidget.currentChanged.disconnect()                   # work around for problem when closing last tab in the connected slot
+                self.tabWidget.removeTab(current_index)                      # causes crash. Would lead to accessing a nonexistant object 
+                self.tabWidget.currentChanged.connect(self.updateActions)
             else:
                 self.tabWidget.removeTab(current_index)
 
@@ -711,9 +790,9 @@ class MainWindow(QtWidgets.QMainWindow, base.Component):
                 filename = self.save(str(os.path.basename(flowgraphview.get_filepath())))              # get filename for saving
                 flowgraphview.save(filename) # TODO: add dialog for file already exists ?  
             if self.tabWidget.count() == 1:
-                self.tabWidget.blockSignals(True)                              # work around for problem when closing last tab
+                self.tabWidget.currentChanged.disconnect()         # work around for problem when closing last tab
                 self.tabWidget.removeTab(0)                        # causes crash. Nowhere described 
-                self.tabWidget.blockSignals(False)
+                self.tabWidget.currentChanged.connect(self.updateActions)
             else:
                 self.tabWidget.removeTab(0)
         
