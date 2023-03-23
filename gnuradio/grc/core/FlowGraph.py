@@ -38,9 +38,9 @@ class FlowGraph(Element):
         """
         log.debug("Initializing FlowGraph")
         Element.__init__(self, parent)
-        self.options_block = self.parent_platform.make_block(self, 'options')
+        self.options_block = self.parent_platform.make_block(self, 'options')    # create options block for flowgraph
 
-        self.blocks = [self.options_block]
+        self.blocks = [self.options_block]   # options block is always present
         self.connections = set()
 
         self._eval_cache = {}

@@ -138,6 +138,7 @@ class MainWindow(QtWidgets.QMainWindow, base.Component):
         self.registerMenu(menus["edit"])
         self.registerMenu(menus["view"])
         self.registerMenu(menus["build"])
+        self.registerMenu(menus["tools"])
         self.registerMenu(menus["help"])
 
         toolbars = self.toolbars
@@ -180,6 +181,9 @@ class MainWindow(QtWidgets.QMainWindow, base.Component):
     @property
     def currentFlowgraph(self):
         return self.tabWidget.currentWidget().flowgraphScene
+    
+    def getFlowgraph(self,index):
+        return self.tabWidget.widget(index).flowgraphScene
 
     def createActions(self, actions):
         '''
@@ -216,7 +220,7 @@ class MainWindow(QtWidgets.QMainWindow, base.Component):
         actions['save_as'] = Action(Icons("document-save-as"), _("save_as"), self,
                                     shortcut=Keys.StandardKey.SaveAs, statusTip=_("save_as-tooltip"))
 
-        actions['save_copy'] = Action(_("save_copy"), self)
+        actions['save_copy'] = Action(("Save Copy"), self)
 
         actions['print'] = Action(Icons('document-print'), _("print"), self,
                                   shortcut=Keys.StandardKey.Print, statusTip=_("print-tooltip"))
@@ -262,11 +266,11 @@ class MainWindow(QtWidgets.QMainWindow, base.Component):
                                       shortcut=Keys.StandardKey.MoveToNextChar,
                                       statusTip=_("rotate_cw-tooltip"))
 
-        actions['enable'] = Action(_("enable"), self,
+        actions['enable'] = Action(_("Enable"), self,
                                    shortcut="E")
-        actions['disable'] = Action(_("disable"), self,
+        actions['disable'] = Action(_("Disable"), self,
                                    shortcut="D")
-        actions['bypass'] = Action(_("bypass"), self)
+        actions['bypass'] = Action(_("Bypass"), self)
 
         actions['vertical_align_top'] = Action(_("vertical_align_top"), self)
         actions['vertical_align_middle'] = Action(_("vertical_align_middle"), self)
@@ -288,9 +292,9 @@ class MainWindow(QtWidgets.QMainWindow, base.Component):
         actions['snap_to_grid'] = Action(_("snap_to_grid"), self)
         actions['snap_to_grid'].setCheckable(True)
         
-        actions['toggle_grid'] = Action(_("toggle_grid"), self, shortcut='G',
+        actions['toggle_grid'] = Action(_("Toggle Grid"), self, shortcut='G',
                                     statusTip=_("toggle_grid-tooltip"))
-
+        actions['toggle_grid'].setCheckable(True)
 
         actions['errors'] = Action(Icons('dialog-error'), _("errors"), self, shortcut='E',
                                    statusTip=_("errors-tooltip"))
@@ -324,8 +328,9 @@ class MainWindow(QtWidgets.QMainWindow, base.Component):
         actions['keys'] = Action(_("&Keys"), self)
 
         actions['parser_errors'] = Action("Parser Errors", self)
+        actions['parser_errors'].setEnabled(False)
 
-        actions['get_involved'] = Action(_("&Get Involved"), self)
+        #actions['get_involved'] = Action(_("&Get Involved"), self)
 
         actions['preferences'] = Action(Icons('preferences-system'), _("preferences"), self,
                                         statusTip=_("preferences-tooltip"))
@@ -342,11 +347,12 @@ class MainWindow(QtWidgets.QMainWindow, base.Component):
         actions['filter_design_tool'] = Action(_("&Filter Design Tool"), self)
 
         actions['set_default_qt_gui_theme'] = Action(_("Set Default &Qt GUI Theme"), self)
-
+        actions['set_default_qt_gui_theme'].setEnabled(False)
         actions['module_browser'] = Action(_("&OOT Module Browser"), self)
-
-        actions['show_flowgraph_complexity'] = Action(_("show_flowgraph_complexity"), self)
+        actions['module_browser'].setEnabled(False)
+        actions['show_flowgraph_complexity'] = Action("Show Flowgraph Complexity", self)
         actions['show_flowgraph_complexity'].setCheckable(True)
+        actions['show_flowgraph_complexity'].setEnabled(False)
 
 
 
@@ -475,15 +481,15 @@ class MainWindow(QtWidgets.QMainWindow, base.Component):
             recent.setDisabled(True)
         file.addMenu(recent)
         
-        #file.addAction(actions['open_recent'])
         file.addAction(actions['close'])
         file.addAction(actions['close_all'])
         file.addSeparator()
         file.addAction(actions['save'])
         file.addAction(actions['save_as'])
+        file.addAction(actions['save_copy'])
         file.addSeparator()
         file.addAction(actions['screen_capture'])
-        file.addAction(actions['print'])
+        #file.addAction(actions['print'])
         file.addSeparator()
         file.addAction(actions['exit'])
         menus['file'] = file
@@ -492,12 +498,14 @@ class MainWindow(QtWidgets.QMainWindow, base.Component):
         edit = Menu("&Edit")
         edit.addAction(actions['undo'])
         edit.addAction(actions['redo'])
+        edit.addAction(actions['view_undo_stack'])
         edit.addSeparator()
         edit.addAction(actions['cut'])
         edit.addAction(actions['copy'])
         edit.addAction(actions['paste'])
         edit.addAction(actions['delete'])
         edit.addAction(actions['select_all'])
+        edit.addAction(actions['select_none'])
         edit.addSeparator()
         edit.addAction(actions['rotate_ccw'])
         edit.addAction(actions['rotate_cw'])
@@ -528,6 +536,8 @@ class MainWindow(QtWidgets.QMainWindow, base.Component):
 
         edit.addMenu(more)
         edit.addAction(actions['properties'])
+        edit.addSeparator()
+        edit.addAction(actions['preferences'])
         menus['edit'] = edit
 
         # Setup submenu
@@ -544,21 +554,35 @@ class MainWindow(QtWidgets.QMainWindow, base.Component):
         view.addMenu(panels)
         view.addMenu(toolbars)
         view.addSeparator()
-        view.addAction(actions['errors'])
+        
+        view.addAction(actions['toggle_grid'])
         view.addAction(actions['find'])
         menus['view'] = view
 
         # Setup the build menu
         build = Menu("&Build")
+        view.addAction(actions['errors'])
         build.addAction(actions['generate'])
         build.addAction(actions['execute'])
         build.addAction(actions['kill'])
         menus['build'] = build
 
+        # Setup the tools menu
+        tools = Menu("&Tools")
+        tools.addAction(actions['filter_design_tool'])
+        tools.addAction(actions['set_default_qt_gui_theme'])
+        tools.addAction(actions['module_browser'])
+        tools.addSeparator()
+        tools.addAction(actions['show_flowgraph_complexity'])
+        menus['tools'] = tools
+
+
         # Setup the help menu
         help = Menu("&Help")
         help.addAction(actions['help'])
         help.addAction(actions['types'])
+        help.addAction(actions['keys'])
+        help.addAction(actions['parser_errors'])
         help.addSeparator()
         help.addAction(actions['about'])
         help.addAction(actions['about_qt'])
@@ -573,7 +597,7 @@ class MainWindow(QtWidgets.QMainWindow, base.Component):
         file.addAction(actions['open'])
         file.addAction(actions['save'])
         file.addAction(actions['close'])
-        file.addAction(actions['print'])
+        #file.addAction(actions['print'])
         toolbars['file'] = file
 
         # Edit toolbar
@@ -592,10 +616,16 @@ class MainWindow(QtWidgets.QMainWindow, base.Component):
 
         # Run Toolbar
         run = Toolbar('Run')
+        run.addAction(actions['errors'])
         run.addAction(actions['generate'])
         run.addAction(actions['execute'])
         run.addAction(actions['kill'])
         toolbars['run'] = run
+
+        # Misc Toolbar
+        misc = Toolbar('Misc')
+        misc.addAction(actions['reload'])
+        toolbars['misc'] = misc
 
     def createStatusBar(self):
         log.debug("Creating status bar")
@@ -652,6 +682,8 @@ class MainWindow(QtWidgets.QMainWindow, base.Component):
         ''' Adds a menu to the main window '''
         help = self.menus["help"].menuAction()
         self.menuBar().insertMenu(help, menu)
+
+
 
     # Action Handlers
     def new_triggered(self):
@@ -750,34 +782,45 @@ class MainWindow(QtWidgets.QMainWindow, base.Component):
             return
         log.info(f"Flowgraph saved as {filename}")
 
-    @pyqtSlot()
-    def close_triggered(self):           # tab is being closed why does index not contain the current (closing) tab??
-                                                # TODO: extend by dialog for save confirmation
-        current_index = self.tabWidget.currentIndex()
-        log.debug(f'Closing tab {current_index}')
-        if current_index == -1:
-            pass 
+    def save_copy_triggered(self):
+        log.debug('Save Copy')
+        filename, filtr = QtWidgets.QFileDialog.getSaveFileName(self, self.actions['save'].statusTip(),
+                               filter='Flow Graph Files (*.grc);;All files (*.*)')
+        if filename:
+            try:
+                self.platform.save_flow_graph(filename, self.currentView)
+            except IOError:
+                log.error('Save (copy) failed')
+
+            log.info(f'Saved (copy) {filename}')
         else:
-            if self.currentFlowgraph.is_dirty():    # check if we have to save
-                question = SaveOnCloseDialog()
-                result = question.exec()
-                if result == QtWidgets.QMessageBox.StandardButton.Save:
-                    filename = self.save(str(os.path.basename(self.currentFlowgraph.get_filepath())))           # get filename for saving
-                    self.currentFlowgraph.save(filename) 
-                elif result == QtWidgets.QMessageBox.StandardButton.Discard:
-                    pass
-                elif result == QtWidgets.QMessageBox.StandardButton.Cancel:
-                    return
+            log.debug('Cancelled Save Copy action')
 
-            if self.tabWidget.count() == 1:
-                self.tabWidget.currentChanged.disconnect()                   # work around for problem when closing last tab in the connected slot
-                self.tabWidget.removeTab(current_index)                      # causes crash. Would lead to accessing a nonexistant object 
-                self.tabWidget.currentChanged.connect(self.updateActions)
-            else:
-                self.tabWidget.removeTab(current_index)
+    #@pyqtSlot(int)   #creates problems using it
+    def close_triggered(self, index):           # tab is being closed why does index not contain the current (closing) tab??
+        index = int(index)                      # THe last tab comes in with False not as numeric ?????
+        log.debug(f'Closing tab {index}')       
+        closeFlowgraph =self.getFlowgraph(index)
+        if closeFlowgraph.is_dirty():    # check if we have to save
+            question = SaveOnCloseDialog()
+            result = question.exec()
+            if result == QtWidgets.QMessageBox.StandardButton.Save:
+                filename = self.save(str(os.path.basename(closeFlowgraph.get_filepath())))           # get filename for saving
+                closeFlowgraph.save(filename) 
+            elif result == QtWidgets.QMessageBox.StandardButton.Discard:
+                pass
+            elif result == QtWidgets.QMessageBox.StandardButton.Cancel:
+                return
 
-            if self.tabWidget.count() == 0:
-                self.new_triggered()
+        if self.tabWidget.count() == 1:
+            self.tabWidget.currentChanged.disconnect()                   # work around for problem when closing last tab in the connected slot
+            self.tabWidget.removeTab(index)                    # causes crash. Would lead to accessing a nonexistant object 
+            self.tabWidget.currentChanged.connect(self.updateActions)
+        else:
+            self.tabWidget.removeTab(index)
+
+        if self.tabWidget.count() == 0:
+            self.new_triggered()
 
 
     @pyqtSlot()
@@ -817,6 +860,10 @@ class MainWindow(QtWidgets.QMainWindow, base.Component):
         self.currentFlowgraph.undoStack.redo()
         self.updateActions()
 
+    @pyqtSlot()
+    def view_undo_stack_triggered(self):
+        log("view_undo_stack")
+
     def cut_triggered(self):
         log.debug('cut: not implemented, yet')
 
@@ -830,6 +877,18 @@ class MainWindow(QtWidgets.QMainWindow, base.Component):
     def delete_triggered(self):
         log.debug('delete')
         self.currentFlowgraph.delete_selected()
+
+    @pyqtSlot()
+    def select_all_triggered(self):
+        log.debug('select_all')
+        self.currentFlowgraph.select_all()
+        self.updateActions()
+    
+    @pyqtSlot()
+    def select_none_triggered(self):
+        log.debug('select_none')
+        self.currentFlowgraph.clearSelection()
+        self.updateActions()
 
     @pyqtSlot()
     def rotate_ccw_triggered(self):
@@ -850,6 +909,20 @@ class MainWindow(QtWidgets.QMainWindow, base.Component):
         errorDialog = ErrorsDialog(self, self.currentFlowgraph)
         errorDialog.exec()
     
+    @pyqtSlot()
+    def toggle_source_bus_triggered(self):
+        log.debug('toggle_source_bus')
+        for b in self.currentFlowgraph.selected_blocks():
+                b.bussify('source')
+        self.currentFlowgraph.update()
+
+    @pyqtSlot()
+    def toggle_sink_bus_triggered(self):
+        log.debug('toggle_source_bus')
+        for b in self.currentFlowgraph.selected_blocks():
+                b.bussify('sink')
+        self.currentFlowgraph.update()
+
     @pyqtSlot()
     def find_triggered(self):
         log.debug('find block')
@@ -887,10 +960,26 @@ class MainWindow(QtWidgets.QMainWindow, base.Component):
             block.create_shapes_and_labels()
 
     @pyqtSlot()
+    def bypass_triggered(self):
+        log.debug('bypass')
+        all_bypassed = True
+        for block in self.currentFlowgraph.selected_blocks():
+            if not block.state == 'bypassed':
+                all_bypassed = False
+                break
+
+        if not all_bypassed:
+            cmd = BypassAction(self.currentFlowgraph)
+            self.currentFlowgraph.undoStack.push(cmd)
+        
+        self.currentFlowgraph.update()
+        self.updateActions()
+
+    @pyqtSlot()
     def execute_triggered(self):
         log.debug('execute')
         py_path = self.file_path[0:-3] + 'py'
-        subprocess.Popen(f'/usr/bin/python {py_path}', shell=True)
+        subprocess.Popen(f'/usr/bin/python {py_path}', shell=True)    # TODO: the path is installation dependent
     
     @pyqtSlot()
     def generate_triggered(self):
@@ -917,70 +1006,104 @@ class MainWindow(QtWidgets.QMainWindow, base.Component):
         log.debug('help')
         self.help()
 
+    @pyqtSlot()
     def kill_triggered(self):
-        log.debug('kill')
+        log.debug('kill: not implemented')
 
     def report_triggered(self):
         log.debug('report')
 
     def library_triggered(self):
-        log.debug('library_triggered')
+        log.debug('library_triggered: not implemented')
 
     def library_toggled(self):
-        log.debug('library_toggled')
+        log.debug('library_toggled: not implemented')
     
     @pyqtSlot()
     def select_all_triggered(self):
-        log.warning('select all')
+        log.warning('select all: not implemented')
         self.currentFlowgraph.select_all()
     
     @pyqtSlot()
-    def bypass_triggered(self):
-        log.warning('bypass')
-
-    @pyqtSlot()
     def vertical_align_top_triggered(self):
-        log.warning('vertical align top')
+        log.warning('vertical align top: not implemented')
 
     @pyqtSlot()
     def vertical_align_middle_triggered(self):
-        log.warning('vertical align middle')
+        log.warning('vertical align middle: not implemented')
 
     @pyqtSlot()
     def vertical_align_bottom_triggered(self):
-        log.warning('vertical align bottom')
+        log.warning('vertical align bottom: not implemented')
 
+    @pyqtSlot()
     def horizontal_align_left_triggered(self):
-        log.warning('horizontal align left')
-
+        log.warning('horizontal align left: not implemented')
+    
+    @pyqtSlot()
     def horizontal_align_center_triggered(self):
-        log.warning('horizontal align center')
+        log.warning('horizontal align center: not implemented')
 
+    @pyqtSlot()
     def horizontal_align_right_triggered(self):
-        log.warning('horizontal align right')
-
+        log.warning('horizontal align right: not implemented')
+    
+    @pyqtSlot()
     def create_hier_triggered(self):
-        log.warning('create hier')
+        log.warning('create hier: not implemented')
 
+    @pyqtSlot()
     def open_hier_triggered(self):
-        log.warning('create hier')
-
+        log.warning('create hier: not implemented')
+    
+    @pyqtSlot()
     def toggle_source_bus_triggered(self):
-        log.warning('toggle source bus')
+        log.warning('toggle source bus: not implemented')
 
+    @pyqtSlot()
     def toggle_sink_bus_triggered(self):
-        log.warning('toggle sink bus')
+        log.warning('toggle sink bus: not implemented')
 
-    def about(self):
+    @pyqtSlot()
+    def about_triggered(self):
         log.debug('about method not implemented, yet')
 
-    def types(self):
+    @pyqtSlot()
+    def types_triggered(self):
         log.debug('types() method not implemented, yet')
 
-    def help(self):
+    @pyqtSlot()
+    def help_triggered(self):
         log.debug('help not implemented, yet')
 
-    
+    @pyqtSlot()
+    def keys_triggered(self):
+        log.debug('keys: not implemented')
+
+    @pyqtSlot()
+    def type_triggered(self):
+        log.debug('type: not implemented')
+
+    @pyqtSlot(bool)
+    def snap_to_grid_toggled(self, toggled):
+        log.debug("snap_to_grid not implemented: not implemented")
+
+    @pyqtSlot(bool)
+    def toggle_grid_toggled(self, bool):
+        log.debug("toggle grid  not implemented: not implemented")
+
+    @pyqtSlot()
+    def reload_triggered(self):
+        log.debug("reload: not implemented")
+
+    @pyqtSlot()
+    def filter_design_tool_triggered(self):
+        log.debug("filter_design_tool: not implemented")
+
+    @pyqtSlot(bool)
+    def show_flowgraph_complexity_toggled(self, bool):
+        log.debug("show_flowgraph_complexity: not implemented")
+
     def closeEvent(self, a0):
         log.debug('close event not implemented, yet')
         #TODO: 
@@ -1001,7 +1124,7 @@ class MainWindow(QtWidgets.QMainWindow, base.Component):
     @pyqtSlot()
     def flowgraph_saved(self):
         self.currentFlowgraph.reset_dirty()
-        self.actions['save'].setEnabled(False)
+        self.updateActions()
         current_index = self.tabWidget.currentIndex();
         self.tabWidget.tabBar().setTabTextColor(current_index,QColorConstants.Black)
 
