@@ -12,6 +12,7 @@ import sys
 import os
 import configparser
 from time import gmtime, strftime
+from os.path import normpath
 
 from PyQt6.QtCore import pyqtSignal
 
@@ -159,6 +160,7 @@ class Config(CoreConfig):
 
     def add_recent_file(self, file_name):
         # double check file_name
+        file_name = normpath(file_name)
         if os.path.exists(file_name):
             recent_files = self.get_recent_files()
             if file_name in recent_files:

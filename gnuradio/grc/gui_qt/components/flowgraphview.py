@@ -130,6 +130,7 @@ class FlowgraphView(QtWidgets.QGraphicsView, base.Component): # added base.Compo
 
     def set_initial_state(self):
         self.flowgraphScene.set_initial_scene()
+        self.centerOn(0, 0)
         
 
     def wheelEvent(self,  event):

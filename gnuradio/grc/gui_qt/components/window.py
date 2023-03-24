@@ -31,13 +31,15 @@ from PyQt6 import QtCore, QtGui, QtWidgets
 from PyQt6.QtCore import Qt, pyqtSlot
 from PyQt6.QtGui import QStandardItemModel
 from PyQt6.QtGui import QColorConstants
+from PyQt6.QtGui import QClipboard
 
 # Custom modules
 from . import FlowgraphView
-from .. import base
+from .. import base, Utils
 from . import RotateCommand
 from . import ErrorsDialog
 from .canvas.block import PropsDialog
+
 #from .import SaveOnCloseDialog
 
 # Logging
@@ -157,7 +159,8 @@ class MainWindow(QtWidgets.QMainWindow, base.Component):
         self.tabWidget.addTab(fg_view, "Untitled")
         
         self.currentFlowgraph.selectionChanged.connect(self.updateActions)  # it's actually the current flowgraph in the tabwidget
-        #self.new_tab(self.flowgraph)
+      
+        self.clipboard = QtGui.QGuiApplication.clipboard()
 
     '''def show(self):
         log.debug("Showing main window")
@@ -204,6 +207,7 @@ class MainWindow(QtWidgets.QMainWindow, base.Component):
         for i, file in enumerate(recent_files):
             file_action = Action(f"{i}: {Path(file).stem}")
             file_action.setVisible(True)
+            normedpath = normpath(file)
             file_action.setData(normpath(file))
             file_action.setToolTip(file)
             actions['open_recent_{}'.format(i)] = file_action
@@ -690,6 +694,7 @@ class MainWindow(QtWidgets.QMainWindow, base.Component):
         log.debug('new triggered')
         fg_view = FlowgraphView(self)
         fg_view.set_initial_state()
+        
         self.tabWidget.addTab(fg_view, "Untitled")
         self.tabWidget.setCurrentIndex(self.tabWidget.count() - 1)
 
@@ -701,10 +706,10 @@ class MainWindow(QtWidgets.QMainWindow, base.Component):
             new_flowgraph = FlowgraphView(self)
             new_flowgraph.load_graph(filename)
             new_flowgraph.flowgraphScene.selectionChanged.connect(self.updateActions)
-            new_flowgraph.flowgraphScene.flowgraph_changed.connect(self.flowgraph_changed)
+            new_flowgraph.flowgraphScene.flowgraph_changed.connect(self.flowgraph_changed)  #change color of tab text when fg dirty and has to be saved
             self.tabWidget.addTab(new_flowgraph, str(os.path.basename(filename)).removesuffix(".grc"))
             self.tabWidget.setCurrentIndex(self.tabWidget.count() - 1)
-            self.tabWidget.setTabToolTip(self.tabWidget.currentIndex(), filename)
+            self.tabWidget.setTabToolTip(self.tabWidget.currentIndex(), filename)  # pop up full file path when hovering over tab
 
     @pyqtSlot()
     def open_triggered(self):
@@ -719,6 +724,7 @@ class MainWindow(QtWidgets.QMainWindow, base.Component):
         sender = QtCore.QObject.sender(self)
         if type(sender) is QtGui.QAction:
             filename = sender.data()
+            recent_files = self.config.get_recent_files() 
             if filename in self.config.get_recent_files():
                 self.open_file(filename)
                 self.config.add_recent_file(filename)
@@ -750,7 +756,7 @@ class MainWindow(QtWidgets.QMainWindow, base.Component):
                 try:
                     #filename = self.save(str(os.path.basename(self.currentFlowgraph.get_filepath())))              # get filename for saving
                     filename = self.currentFlowgraph.get_filepath()
-                    if bool(filename):
+                    if filename:
                         self.currentFlowgraph.save(filename) 
                         self.flowgraph_saved()  # update other data
                         log.info(f'Saved flowgraph {filename}')
@@ -768,7 +774,7 @@ class MainWindow(QtWidgets.QMainWindow, base.Component):
     def save_as_triggered(self):
         log.debug('save as triggered')
         filename = self.save()  # get file save name
-        if bool(filename):
+        if filename:
             try:
                 self.file_path = filename
                 self.currentFlowgraph.save(filename)
@@ -784,23 +790,30 @@ class MainWindow(QtWidgets.QMainWindow, base.Component):
 
     def save_copy_triggered(self):
         log.debug('Save Copy')
-        filename, filtr = QtWidgets.QFileDialog.getSaveFileName(self, self.actions['save'].statusTip(),
-                               filter='Flow Graph Files (*.grc);;All files (*.*)')
+        filename = self.currentFlowgraph.get_filepath().removesuffix(".grc") +"_copy.grc"
+        filename = self.save(filename) 
         if filename:
             try:
-                self.platform.save_flow_graph(filename, self.currentView)
+                self.platform.save_flow_graph(self.currentFlowgraph, filename)
             except IOError:
                 log.error('Save (copy) failed')
 
             log.info(f'Saved (copy) {filename}')
+            self.open_file(filename)
+            self.config.add_recent_file(filename)
         else:
             log.debug('Cancelled Save Copy action')
 
-    #@pyqtSlot(int)   #creates problems using it
+
+
+    #@pyqtSlot(int)   #creates problems using it with the last tab
     def close_triggered(self, index):           # tab is being closed why does index not contain the current (closing) tab??
-        index = int(index)                      # THe last tab comes in with False not as numeric ?????
-        log.debug(f'Closing tab {index}')       
-        closeFlowgraph =self.getFlowgraph(index)
+        if isinstance(index, bool) and not index:           # closed via buttom
+            close_index = self.tabWidget.currentIndex()   
+        else:
+            close_index = index
+        log.debug(f'Closing tab {close_index}')      
+        closeFlowgraph =self.getFlowgraph(close_index)
         if closeFlowgraph.is_dirty():    # check if we have to save
             question = SaveOnCloseDialog()
             result = question.exec()
@@ -814,10 +827,10 @@ class MainWindow(QtWidgets.QMainWindow, base.Component):
 
         if self.tabWidget.count() == 1:
             self.tabWidget.currentChanged.disconnect()                   # work around for problem when closing last tab in the connected slot
-            self.tabWidget.removeTab(index)                    # causes crash. Would lead to accessing a nonexistant object 
+            self.tabWidget.removeTab(close_index)                    # causes crash. Would lead to accessing a nonexistant object 
             self.tabWidget.currentChanged.connect(self.updateActions)
         else:
-            self.tabWidget.removeTab(index)
+            self.tabWidget.removeTab(close_index)
 
         if self.tabWidget.count() == 0:
             self.new_triggered()
@@ -845,8 +858,23 @@ class MainWindow(QtWidgets.QMainWindow, base.Component):
     def print_triggered(self):
         log.debug('print: not implemented,yet')
 
+    @pyqtSlot()
     def screen_capture_triggered(self):
         log.debug('screen capture: not implemented, yet')
+        # TODO: Should be user-set somehow
+        background_transparent = True
+
+        Save = QtWidgets.QFileDialog.getSaveFileName
+        file_path, filtr = Save(self, self.actions['save'].statusTip(),
+                               filter='PDF files (*.pdf);;PNG files (*.png);;SVG files (*.svg)')
+        if file_path is not None:
+            try:
+                Utils.make_screenshot(
+                    self.currentView, file_path, background_transparent)
+            except ValueError:
+                #Messages.send('Failed to generate screenshot\n')
+                log.error("Failed to generate screenshot")
+
 
     @pyqtSlot()
     def undo_triggered(self):
