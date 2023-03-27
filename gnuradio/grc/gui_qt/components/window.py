@@ -151,14 +151,10 @@ class MainWindow(QtWidgets.QMainWindow, base.Component):
         self.tabWidget = self.createTabWidget()
         self.setCentralWidget(self.tabWidget)
 
-        log.debug("Loading flowgraph model")
-        fg_view = FlowgraphView(self)                         # introduce better logical structure. Who should load the data. Scene -> update View. Or the view?   
-        fg_view.set_initial_state()
-        log.debug("Adding flowgraph view")                         
+        log.debug("Loading new flowgraph model")
+        fg_view = self.create_new()
         
         self.tabWidget.addTab(fg_view, "Untitled")
-        
-        self.currentFlowgraph.selectionChanged.connect(self.updateActions)  # it's actually the current flowgraph in the tabwidget
       
         self.clipboard = QtGui.QGuiApplication.clipboard()
 
@@ -631,33 +627,43 @@ class MainWindow(QtWidgets.QMainWindow, base.Component):
         misc.addAction(actions['reload'])
         toolbars['misc'] = misc
 
-    def createStatusBar(self):
+    def createStatusBar(self): # --- 1
         log.debug("Creating status bar")
         self.statusBar().showMessage(_("ready-message"))
 
-    def new_tab(self, flowgraph):
+    def new_tab(self, flowgraph): 
         self.setCentralWidget(flowgraph)
 
-    def open(self):
+    def open(self):  # --- 2
         Open = QtWidgets.QFileDialog.getOpenFileName
         filename, filtr = Open(self, self.actions['open'].statusTip(),
                                filter='Flow Graph Files (*.grc);;All files (*.*)')
         return filename
 
-    def save(self, filename = None):
+    def save(self, filename = None): # --- 3
         if filename == "":
             filter = '*.grc'
         else:
             filter = filename
         Save = QtWidgets.QFileDialog.getSaveFileName
         filename, filtr = Save(self, self.actions['save'].statusTip(), filter)
-
                                #filter='Flow Graph Files (*.grc);;All files (*.*)')
-                               
         return filename
 
+    def create_new(self, filename = None):
+        fg_view = FlowgraphView(self)
+        if filename:
+            fg_view.load_graph(filename)
+        else:
+            fg_view.set_initial_state()
+
+        fg_view.flowgraphScene.selectionChanged.connect(self.updateActions)  # it's actually the current flowgraph in the tabwidget
+        fg_view.flowgraphScene.flowgraph_changed.connect(self.flowgraph_changed)
+        return fg_view
+
+
     # Overridden methods
-    def addDockWidget(self, location, widget):
+    def addDockWidget(self, location, widget): # --- 4
         ''' Adds a dock widget to the view. '''
         # This overrides QT's addDockWidget so that a 'show' menu auto can automatically be
         # generated for this action.
@@ -671,7 +677,7 @@ class MainWindow(QtWidgets.QMainWindow, base.Component):
         self.menus["panels"].addAction(widget.toggleViewAction())
         self.menus['panels'].setEnabled(True)
 
-    def addToolBar(self, toolbar):
+    def addToolBar(self, toolbar): # --- 5
         ''' Adds a toolbar to the main window '''
         # This is also overridden so a show menu item can automatically be added
         super().addToolBar(toolbar)
@@ -682,7 +688,7 @@ class MainWindow(QtWidgets.QMainWindow, base.Component):
         self.menus["toolbars"].addAction(toolbar.toggleViewAction())
         self.menus['toolbars'].setEnabled(True)
 
-    def addMenu(self, menu):
+    def addMenu(self, menu): # --- 6
         ''' Adds a menu to the main window '''
         help = self.menus["help"].menuAction()
         self.menuBar().insertMenu(help, menu)
@@ -690,29 +696,24 @@ class MainWindow(QtWidgets.QMainWindow, base.Component):
 
 
     # Action Handlers
-    def new_triggered(self):
+    def new_triggered(self):  
         log.debug('new triggered')
-        fg_view = FlowgraphView(self)
-        fg_view.set_initial_state()
-        
+        fg_view = self.create_new()
         self.tabWidget.addTab(fg_view, "Untitled")
         self.tabWidget.setCurrentIndex(self.tabWidget.count() - 1)
 
 
 
-    def open_file(self, filename):         
+    def open_file(self, filename): 
         if filename:
             log.info("Opening flowgraph ({0})".format(filename))
-            new_flowgraph = FlowgraphView(self)
-            new_flowgraph.load_graph(filename)
-            new_flowgraph.flowgraphScene.selectionChanged.connect(self.updateActions)
-            new_flowgraph.flowgraphScene.flowgraph_changed.connect(self.flowgraph_changed)  #change color of tab text when fg dirty and has to be saved
-            self.tabWidget.addTab(new_flowgraph, str(os.path.basename(filename)).removesuffix(".grc"))
-            self.tabWidget.setCurrentIndex(self.tabWidget.count() - 1)
+            fg_view = self.create_new(filename)
+            self.tabWidget.addTab(fg_view, str(os.path.basename(filename)).removesuffix(".grc"))
+            self.tabWidget.setCurrentIndex(self.tabWidget.count() - 1) # make new fg active
             self.tabWidget.setTabToolTip(self.tabWidget.currentIndex(), filename)  # pop up full file path when hovering over tab
 
     @pyqtSlot()
-    def open_triggered(self):
+    def open_triggered(self): # --- 8 
         log.debug('open triggered')
         filename = self.open()
 
@@ -720,11 +721,10 @@ class MainWindow(QtWidgets.QMainWindow, base.Component):
         self.config.add_recent_file(filename)
     
     @pyqtSlot()
-    def open_recent_triggered(self):
+    def open_recent_triggered(self): # --- 8 
         sender = QtCore.QObject.sender(self)
         if type(sender) is QtGui.QAction:
             filename = sender.data()
-            recent_files = self.config.get_recent_files() 
             if filename in self.config.get_recent_files():
                 self.open_file(filename)
                 self.config.add_recent_file(filename)
@@ -733,7 +733,7 @@ class MainWindow(QtWidgets.QMainWindow, base.Component):
         pass
 
     @pyqtSlot()
-    def recent_files_changed(self):  # update recent files sub menu
+    def recent_files_changed(self):  # update recent files sub menu # +++
         self.menus['recent'].clear()
         for i, file in enumerate(self.config.get_recent_files()):
             file_action = Action(f"{i}: {Path(file).stem}")
@@ -746,7 +746,7 @@ class MainWindow(QtWidgets.QMainWindow, base.Component):
             file_action.triggered.connect(self.open_recent_triggered)
 
     @pyqtSlot()
-    def save_triggered(self):
+    def save_triggered(self): # --- 9
         current_index = self.tabWidget.currentIndex()
         log.debug(f'Saving tab {current_index}')
         if current_index == -1:
@@ -761,7 +761,8 @@ class MainWindow(QtWidgets.QMainWindow, base.Component):
                         self.flowgraph_saved()  # update other data
                         log.info(f'Saved flowgraph {filename}')
                     else:
-                        log.debug("Save flowgraph cancelled")
+                        log.debug('Flowgraph does not have a filename')
+                        self.save_as_triggered()
                         return
                 except IOError:
                     log.error(f'Save failed for {filename}: ' +str(IOError))
@@ -771,7 +772,7 @@ class MainWindow(QtWidgets.QMainWindow, base.Component):
 
 
     @pyqtSlot()
-    def save_as_triggered(self):
+    def save_as_triggered(self): # --- 10
         log.debug('save as triggered')
         filename = self.save()  # get file save name
         if filename:
@@ -838,13 +839,12 @@ class MainWindow(QtWidgets.QMainWindow, base.Component):
 
     @pyqtSlot()
     def close_all_triggered(self):
-        # TODO: extend by dialog for save confirmation
         log.debug('close all')
         while self.tabWidget.count() > 0:
             flowgraphview = self.tabWidget.widget(0)
             if flowgraphview.is_dirty():    # check if we have to save
                 filename = self.save(str(os.path.basename(flowgraphview.get_filepath())))              # get filename for saving
-                flowgraphview.save(filename) # TODO: add dialog for file already exists ?  
+                flowgraphview.save(filename)  
             if self.tabWidget.count() == 1:
                 self.tabWidget.currentChanged.disconnect()         # work around for problem when closing last tab
                 self.tabWidget.removeTab(0)                        # causes crash. Nowhere described 
@@ -877,118 +877,121 @@ class MainWindow(QtWidgets.QMainWindow, base.Component):
 
 
     @pyqtSlot()
-    def undo_triggered(self):
-        log.debug('undo')
+    def undo_triggered(self):  # ---
+        log.debug('undo: To be properly implemented')
         self.currentFlowgraph.undoStack.undo()
         self.updateActions()
     
     @pyqtSlot()
-    def redo_triggered(self):
-        log.debug('redo')
+    def redo_triggered(self): # ---
+        log.debug('redo: To be properly implemented')
         self.currentFlowgraph.undoStack.redo()
         self.updateActions()
 
     @pyqtSlot()
-    def view_undo_stack_triggered(self):
-        log("view_undo_stack")
+    def view_undo_stack_triggered(self):  # --- 
+        log("view_undo_stack: To be properly implemented. will it ever??'")
 
-    def cut_triggered(self):
+    def cut_triggered(self): # --- 
         log.debug('cut: not implemented, yet')
 
-    def copy_triggered(self):
+    def copy_triggered(self): # --- 
         log.debug('copy: not implemented, yet')
 
-    def paste_triggered(self):
+    def paste_triggered(self): # --- 
         log.debug('paste: not implemented, yet')
 
     @pyqtSlot()
-    def delete_triggered(self):
+    def delete_triggered(self): # --- 
         log.debug('delete')
         self.currentFlowgraph.delete_selected()
 
     @pyqtSlot()
-    def select_all_triggered(self):
+    def select_all_triggered(self): # --- 
         log.debug('select_all')
         self.currentFlowgraph.select_all()
         self.updateActions()
     
     @pyqtSlot()
-    def select_none_triggered(self):
+    def select_none_triggered(self): # --- 
         log.debug('select_none')
         self.currentFlowgraph.clearSelection()
         self.updateActions()
 
     @pyqtSlot()
-    def rotate_ccw_triggered(self):
+    def rotate_ccw_triggered(self): # --- 
         log.debug('rotate_ccw')
         rotateCommand = RotateCommand(self.currentFlowgraph, -90)
         self.currentFlowgraph.undoStack.push(rotateCommand)
         self.updateActions()
     
     @pyqtSlot()
-    def rotate_cw_triggered(self):
+    def rotate_cw_triggered(self): # --- 
         log.debug('rotate_cw')
         rotateCommand = RotateCommand(self.currentFlowgraph, 90)
         self.currentFlowgraph.undoStack.push(rotateCommand)
         self.updateActions()
 
-    @pyqtSlot()
-    def errors_triggered(self):
-        errorDialog = ErrorsDialog(self, self.currentFlowgraph)
-        errorDialog.exec()
     
     @pyqtSlot()
-    def toggle_source_bus_triggered(self):
+    def toggle_source_bus_triggered(self): # --- 
         log.debug('toggle_source_bus')
         for b in self.currentFlowgraph.selected_blocks():
                 b.bussify('source')
         self.currentFlowgraph.update()
 
     @pyqtSlot()
-    def toggle_sink_bus_triggered(self):
+    def toggle_sink_bus_triggered(self): # --- 
         log.debug('toggle_source_bus')
         for b in self.currentFlowgraph.selected_blocks():
                 b.bussify('sink')
         self.currentFlowgraph.update()
 
     @pyqtSlot()
-    def find_triggered(self):
+    def errors_triggered(self): # --- 
+        errorDialog = ErrorsDialog(self, self.currentFlowgraph)
+        errorDialog.exec()
+
+    @pyqtSlot()
+    def find_triggered(self): # --- 
         log.debug('find block')
         self._app().BlockLibrary._search_bar.setFocus()
     
+    # def get_involved_triggered(self):  # DO    I REALLY want to implement this ?
+
     @pyqtSlot()
-    def about_triggered(self):
+    def about_triggered(self): # --- 
         log.debug('about')
         self.about()
     
     @pyqtSlot()
-    def about_qt_triggered(self):
+    def about_qt_triggered(self): # --- 
         log.debug('about_qt')
         QtWidgets.QApplication.instance().aboutQt()
     
     @pyqtSlot()
-    def properties_triggered(self):
+    def properties_triggered(self): # --- 
         log.debug('properties')
         for block in self.currentFlowgraph.selected_blocks():
             props = PropsDialog(block)
             props.exec()
 
     @pyqtSlot()
-    def enable_triggered(self):
+    def enable_triggered(self): # --- 
         log.debug('enable')
         for block in self.currentFlowgraph.selected_blocks():
             block.state = 'enabled'
             block.create_shapes_and_labels()
 
     @pyqtSlot()
-    def disable_triggered(self):
+    def disable_triggered(self): # --- 
         log.debug('disable')
         for block in self.currentFlowgraph.selected_blocks():
             block.state = 'disabled'
             block.create_shapes_and_labels()
 
     @pyqtSlot()
-    def bypass_triggered(self):
+    def bypass_triggered(self): # --- 
         log.debug('bypass')
         all_bypassed = True
         for block in self.currentFlowgraph.selected_blocks():
@@ -1003,19 +1006,29 @@ class MainWindow(QtWidgets.QMainWindow, base.Component):
         self.currentFlowgraph.update()
         self.updateActions()
 
-    @pyqtSlot()
+    @pyqtSlot()  # ---
+    def generate_triggered(self):
+        log.debug('generate')
+        generator = self.platform.Generator(self.currentFlowgraph, os.path.dirname(self.file_path))
+        generator.write()
+    
+    @pyqtSlot() # ---
     def execute_triggered(self):
         log.debug('execute')
         py_path = self.file_path[0:-3] + 'py'
         subprocess.Popen(f'/usr/bin/python {py_path}', shell=True)    # TODO: the path is installation dependent
     
-    @pyqtSlot()
-    def generate_triggered(self):
-        log.debug('generate')
-        generator = self.platform.Generator(self.currentFlowgraph, os.path.dirname(self.file_path))
-        generator.write()
+    @pyqtSlot() # ---
+    def kill_triggered(self):
+        log.debug('kill: not implemented')
 
-    def types_triggered(self):
+
+    @pyqtSlot() # ---
+    def help_triggered(self):
+        log.debug('help')
+        self.help()
+
+    def types_triggered(self): # ---
         log.debug('types')
         self.types()
 
@@ -1029,14 +1042,14 @@ class MainWindow(QtWidgets.QMainWindow, base.Component):
         self.config.save()  #save configuration
         self.app.exit()
     
-    @pyqtSlot()
+    @pyqtSlot() # ---
     def help_triggered(self):
         log.debug('help')
         self.help()
 
-    @pyqtSlot()
-    def kill_triggered(self):
-        log.debug('kill: not implemented')
+    @pyqtSlot() # --- 
+    def keys_triggered(self):
+        log.debug('keys: not implemented')
 
     def report_triggered(self):
         log.debug('report')
@@ -1046,11 +1059,6 @@ class MainWindow(QtWidgets.QMainWindow, base.Component):
 
     def library_toggled(self):
         log.debug('library_toggled: not implemented')
-    
-    @pyqtSlot()
-    def select_all_triggered(self):
-        log.warning('select all: not implemented')
-        self.currentFlowgraph.select_all()
     
     @pyqtSlot()
     def vertical_align_top_triggered(self):
@@ -1088,29 +1096,7 @@ class MainWindow(QtWidgets.QMainWindow, base.Component):
     def toggle_source_bus_triggered(self):
         log.warning('toggle source bus: not implemented')
 
-    @pyqtSlot()
-    def toggle_sink_bus_triggered(self):
-        log.warning('toggle sink bus: not implemented')
 
-    @pyqtSlot()
-    def about_triggered(self):
-        log.debug('about method not implemented, yet')
-
-    @pyqtSlot()
-    def types_triggered(self):
-        log.debug('types() method not implemented, yet')
-
-    @pyqtSlot()
-    def help_triggered(self):
-        log.debug('help not implemented, yet')
-
-    @pyqtSlot()
-    def keys_triggered(self):
-        log.debug('keys: not implemented')
-
-    @pyqtSlot()
-    def type_triggered(self):
-        log.debug('type: not implemented')
 
     @pyqtSlot(bool)
     def snap_to_grid_toggled(self, toggled):
