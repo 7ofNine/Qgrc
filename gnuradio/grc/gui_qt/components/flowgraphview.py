@@ -160,6 +160,7 @@ class FlowgraphView(QtWidgets.QGraphicsView, base.Component): # added base.Compo
             QtWidgets.QGraphicsView.wheelEvent(self, event)
 
     def mousePressEvent(self,  event):
+        log.debug('View: mouse press')
         if event.button() == Qt.MouseButton.LeftButton:
             log.debug("mouse pressed view")
             self.mousePressed = True
@@ -167,6 +168,7 @@ class FlowgraphView(QtWidgets.QGraphicsView, base.Component): # added base.Compo
             super(FlowgraphView, self).mousePressEvent(event)
 
     def mouseMoveEvent(self, event):
+        log.debug('View: mouse move')
         if self.mousePressed and self.isPanning:
             newPos = event.pos()
             diff = newPos - self.dragPos
@@ -182,7 +184,7 @@ class FlowgraphView(QtWidgets.QGraphicsView, base.Component): # added base.Compo
             super(FlowgraphView, self).mouseMoveEvent(event)
 
     def mouseReleaseEvent(self, event):
-
+        log.debug('View: mouse release')
         if event.button() == Qt.MouseButton.LeftButton:
             self.mousePressed = False
         super(FlowgraphView, self).mouseReleaseEvent(event)
@@ -193,7 +195,7 @@ class FlowgraphView(QtWidgets.QGraphicsView, base.Component): # added base.Compo
 
 
     def mouseDoubleClickEvent(self, event):
-        log.debug("view double click 2")
+        log.debug('View: mouse double click')
         # This will pass the double click event to the scene
         super(FlowgraphView, self).mouseDoubleClickEvent(event)
 

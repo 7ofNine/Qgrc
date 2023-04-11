@@ -36,7 +36,7 @@ def make_screenshot(fg_view, file_path, transparent_bg=False):
 
         pixmap = QtGui.QPixmap(rect.size())
         painter = QtGui.QPainter(pixmap)
-
+        painter.setBackgroundMode(transparent_bg)
         fg_view.render(painter, QtCore.QRectF(pixmap.rect()), rect)
         pixmap.save(file_path,"PNG")
         painter.end()

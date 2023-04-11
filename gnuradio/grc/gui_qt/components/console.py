@@ -194,6 +194,7 @@ class Console(QtWidgets.QDockWidget, base.Component):
         #  and margins in the output
 
         self._text.append(line)
+        self._text.verticalScrollBar().setValue(self._text.verticalScrollBar().maximum())
 
     # Handlers for the view actions
     def clear_triggered(self):

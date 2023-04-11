@@ -18,6 +18,7 @@
 # Third-party modules
 import logging
 import datetime
+import sys
 
 from PyQt6 import QtGui, QtCore, QtWidgets
 from PyQt6.QtCore import Qt, pyqtSignal
@@ -27,9 +28,12 @@ from itertools import count
 from ....core.base import Element
 from ... import base 
 from .connection import Connection
+from .RubberBand import RubberBand
 from ....core.FlowGraph import FlowGraph as CoreFlowgraph
-from ..undoable_actions import MoveCommand
+#from .. import MoveAction
+from ..undoable_actions import MoveAction
 from ... import Constants
+#from . import Port how to make this import work? incompletely initialized initialization sequence
 
 log = logging.getLogger(__name__)
 
@@ -37,7 +41,12 @@ log = logging.getLogger(__name__)
 
 class FlowgraphScene(QtWidgets.QGraphicsScene, base.Component, CoreFlowgraph):
 
+    itemMoved = pyqtSignal([QtCore.QPointF])
     flowgraph_changed = pyqtSignal()
+    newElement = pyqtSignal([Element])
+    deleteElement = pyqtSignal([Element])
+    blockPropsChange = pyqtSignal([Element])
+
 
     def __init__(self):
         super(FlowgraphScene, self).__init__()
@@ -47,7 +56,7 @@ class FlowgraphScene(QtWidgets.QGraphicsScene, base.Component, CoreFlowgraph):
         self.isPanning    = False
         self.mousePressed = False
         
-        self.newConnection = None
+        self.rubberband = None
         self.startPort = None
 
         self.undoStack = QtGui.QUndoStack()
@@ -55,14 +64,15 @@ class FlowgraphScene(QtWidgets.QGraphicsScene, base.Component, CoreFlowgraph):
         self.redoAction = self.undoStack.createRedoAction(self, "Redo")
 
         self.dirty = False  # flag for flowgraph has changed has to be saved on close
-
+        self.clickPos = None
+        
 
     def update(self):
         """
         Call the top level rewrite and validate.
         Call the top level create labels and shapes.  
         """
-        
+        log.debug("FGS: update")
         self.rewrite()
         self.validate()
         for block in self.blocks:
@@ -76,7 +86,7 @@ class FlowgraphScene(QtWidgets.QGraphicsScene, base.Component, CoreFlowgraph):
         #self.create_shapes()
 
     def dragEnterEvent(self, event):
-        log.debug("drop enter")
+        log.debug("drag enter")
         if event.mimeData().hasUrls:
             event.setDropAction(Qt.DropAction.CopyAction)
             event.accept()
@@ -216,6 +226,7 @@ class FlowgraphScene(QtWidgets.QGraphicsScene, base.Component, CoreFlowgraph):
         return True
 
     def registerBlockMovement(self, clicked_block):
+        log.debug("Scene: register block move")
         # We need to pass the clicked block here because
         # it hasn't been registered as selected yet
         #log.debug("register block move scene")
@@ -223,41 +234,73 @@ class FlowgraphScene(QtWidgets.QGraphicsScene, base.Component, CoreFlowgraph):
             block.registerMoveStarting()
 
     def registerMoveCommand(self, block):
-        #log.debug("register move command scene")
+        log.debug("Scene: register move")
         ts = datetime.datetime.now().timestamp()
         log.debug('fr{} move_cmd '.format(ts))
         for block in self.selected_blocks():
             block.registerMoveEnding()
-        moveCommand = MoveCommand(self, self.selected_blocks())
+        moveCommand = MoveAction(self, self.selected_blocks())
         self.undoStack.push(moveCommand)
         self.app.MainWindow.updateActions()
 
+
+    def _createElement(self, new_con):
+        self.add_element(new_con)
+        self.newElement.emit(new_con)
+        self.update()
+        return True
+
     def mousePressEvent(self,  event):
-        log.debug("mouse pressed scene")
+        log.debug("Scene: mouse press")
         item = self.itemAt(event.scenePos(), QtGui.QTransform())
+        selected = self.selectedItems()
+        self.movingThings = False
+        if item:
+            if item.is_block:
+                self.movingThings = True
+        self.clickPos = event.scenePos()
+        conn_made = False
         if item:
             if item.is_port:
-                self.startPort = item
-                log.debug("mouse start: " +str(event.scenePos()))
-                self.newConnection = QtWidgets.QGraphicsLineItem(QtCore.QLineF(event.scenePos(), event.scenePos()))
-                linePen = QtGui.QPen(QtCore.Qt.PenStyle.DotLine)
-                linePen.setColor(QtGui.QColor(255,0,0)) #temporary
-                self.newConnection.setPen(linePen)
-                self.addItem(self.newConnection)
-                print("clicked a port")
+                 if len(selected) == 1:
+                     if selected[0].is_port and selected[0] != item:
+                        if selected[0].is_source and item.is_sink:
+                            log.debug("Creating connection: source -> sink")
+                            new_con = Connection(self, selected[0], item)
+                            conn_made = self._createElement(new_con)
+                        elif selected[0].is_sink and item.is_source:
+                            log.debug("Created connection (click): sink <- source")
+                            new_con = Connection(self, item, selected[0])
+                            conn_made = self._createElement(new_con)
+                        else:
+                            log.debug("Could not determine source or sink. Not connected")
+                            conn_made = False
+
+                 if not conn_made:
+                    self.startPort = item  # can we prevent creating rubberband when single click?
+                ##NEW    if item.is_source:
+                ##NEW         self.newConnection = ConnectionArrow(self, item.connection_point, event.scenePos())
+                ##NEW         self.newConnection.setPen(QtGui.QPen(1))
+                ##NEW         self.addItem(self.newConnection)
+
+            #if item.is_port:   # this prepares a temporary line drawn from source to sink before actually drawing the connection. Just a common convinience
+                    #self.startPort = item
+                    log.debug("mouse start: " +str(event.scenePos()))
+                    self.rubberband = RubberBand(event)
+                    self.addItem(self.rubberband)
+                    log.debug('Scene: clicked a port')
         if event.button() == Qt.MouseButton.LeftButton:
-            #log.debug("mouse pressed forwarded scene")
+            log.debug("Scene: mouse press forwarded")
             self.mousePressed = True
             super(FlowgraphScene, self).mousePressEvent(event)
 
     def mouseMoveEvent(self, event):
-        ts = datetime.datetime.now().timestamp()
-        log.debug('mouse moved scene {}'.format(ts))
+        #ts = datetime.datetime.now().timestamp()
+        log.debug('Scene: mouse move')
 
-        if self.newConnection:
+        if self.rubberband:
             log.debug("move end point: " + str(event.scenePos()))
-            newConnection_ = QtCore.QLineF(self.newConnection.line().p1(), event.scenePos())
-            self.newConnection.setLine(newConnection_)
+            self.rubberband.update(event)
 
         if self.mousePressed and self.isPanning:
             newPos = event.pos()
@@ -275,17 +318,31 @@ class FlowgraphScene(QtWidgets.QGraphicsScene, base.Component, CoreFlowgraph):
             super(FlowgraphScene, self).mouseMoveEvent(event)
 
     def mouseReleaseEvent(self, event):
-        log.debug("mouse released scene")
-        if self.newConnection:
-            item = self.itemAt(event.scenePos(), QtGui.QTransform())
-            if isinstance(item, Element):
+        log.debug("Scene: mouse release ")
+        if self.rubberband:
+            log.debug("Scene: mouse release 1")
+            items = list(filter(lambda x : isinstance(x, Element), self.items(event.scenePos())))
+            if len(items) == 1:
+                item = items[0]
+                log.debug("Scene: mouse release 2")
                 if item.is_port and item != self.startPort:
-                    log.debug("Connecting two ports")
-                    self.connectionPath = Connection(self, self.startPort, item)
-                    self.connections.add(self.connectionPath)
-                    self.update()
-            self.removeItem(self.newConnection)   #remove temporary straight line
-            self.newConnection = None
+                    if (item.is_sink and self.startPort.is_source) or (item.is_source and self.startPort.is_sink): 
+                        log.debug("Connecting two ports")
+                        connectionPath = Connection(self, self.startPort, item)
+                        self.connections.add(connectionPath)
+                        self.update()
+                    else:
+                        log.debug("Can't connect in->in/out->out")
+            self.removeItem(self.rubberband)   
+            self.rubberband = None
+            log.debug('rubberband destroyed')
+        else:
+            log.debug("Scene: mouse release 3")
+            if self.clickPos != event.scenePos():
+                log.debug("Scene: mouse release 4")
+                if self.movingThings:
+                    log.debug("Scene: mouse release 5")
+                    self.itemMoved.emit(event.scenePos() - self.clickPos)
             
         '''
         if event.button() == Qt.MouseButton.LeftButton:
@@ -297,10 +354,11 @@ class FlowgraphScene(QtWidgets.QGraphicsScene, base.Component, CoreFlowgraph):
                 #self.setCursor(Qt.CursorShape.ArrowCursor)
             self.mousePressed = False
         '''
+        log.debug("Scene: mouse release 6")
         super(FlowgraphScene, self).mouseReleaseEvent(event)
 
     def mouseDoubleClickEvent(self, event): # Will be used to open up dialog box of a block
-        log.debug("scene double click")
+        log.debug("Scene: mouse double click")
         super(FlowgraphScene, self).mouseDoubleClickEvent(event)
 
 
@@ -318,10 +376,10 @@ class FlowgraphScene(QtWidgets.QGraphicsScene, base.Component, CoreFlowgraph):
         '''
 
     def createMenus(self, actions, menus):
-        log.debug("Creating menus")
+        log.debug("Scene: Creating menus")
 
     def createToolbars(self, actions, toolbars):
-        log.debug("Creating toolbars")
+        log.debug("Scene: Creating toolbars")
 
 
     def import_data(self, data):
@@ -340,6 +398,10 @@ class FlowgraphScene(QtWidgets.QGraphicsScene, base.Component, CoreFlowgraph):
         if element is not self.options_block:    # the options block can not be deleted
             self.removeItem(element)
             super(FlowgraphScene, self).remove_element(element)
+
+    def add_element(self, element):
+        #super(CoreFlowgraph, self).add_element(element) # does not exist in flowgraph (even in original)
+        self.addItem(element)
 
     def select_all(self):
         """Select all blocks in the flow graph"""
@@ -385,5 +447,104 @@ class FlowgraphScene(QtWidgets.QGraphicsScene, base.Component, CoreFlowgraph):
 
     def get_filepath(self):
         return self.grc_file_path
+
+
+
+
+
+    def copy_to_clipboard(self):
+        """
+        Copy the selected blocks and connections into the clipboard.
+
+        Returns:
+            the clipboard
+        """
+        # get selected blocks
+        blocks = list(self.selected_blocks())
+        if not blocks:
+            return None
+        # calc x and y min
+        x_min, y_min = blocks[0].states['coordinate']
+        for block in blocks:
+            x, y = block.states['coordinate']
+            x_min = min(x, x_min)
+            y_min = min(y, y_min)
+        # get connections between selected blocks
+        connections = list(filter(
+            lambda c: c.source_block in blocks and c.sink_block in blocks,
+            self.connections,
+        ))
+        clipboard = (
+            (x_min, y_min),
+            [block.export_data() for block in blocks],
+            [connection.export_data() for connection in connections],
+        )
+        return clipboard
+
+    
+    def paste_from_clipboard(self, clipboard):
+        """
+        Paste the blocks and connections from the clipboard.
+
+        Args:
+            clipboard: the nested data of blocks, connections
+        """
+        self.clearSelection()
+        (x_min, y_min), blocks_n, connections_n = clipboard
+        '''
+        # recalc the position
+        scroll_pane = self.drawing_area.get_parent().get_parent()
+        h_adj = scroll_pane.get_hadjustment()
+        v_adj = scroll_pane.get_vadjustment()
+        x_off = h_adj.get_value() - x_min + h_adj.get_page_size() / 4
+        y_off = v_adj.get_value() - y_min + v_adj.get_page_size() / 4
+
+        if len(self.get_elements()) <= 1:
+            x_off, y_off = 0, 0
+        '''
+        x_off, y_off = 10, 10
+
+        # create blocks
+        pasted_blocks = {}
+        for block_n in blocks_n:
+            block_key = block_n.get('id')
+            if block_key == 'options':
+                continue
+
+            block_name = block_n.get('name')
+            # Verify whether a block with this name exists before adding it
+            if block_name in (blk.name for blk in self.blocks):
+                block_n = block_n.copy()
+                block_n['name'] = self._get_unique_id(block_name)
+
+            block = self.new_block(block_key)
+            if not block:
+                continue  # unknown block was pasted (e.g. dummy block)
+
+            block.import_data(**block_n)
+            pasted_blocks[block_name] = block  # that is before any rename
+
+            block.moveBy(x_off, y_off)
+            self.addItem(block)
+            block.moveToTop()
+            block.setSelected(True)
+            '''
+            while any(Utils.align_to_grid(block.states['coordinate']) == Utils.align_to_grid(other.states['coordinate'])
+                      for other in self.blocks if other is not block):
+                block.moveBy(Constants.CANVAS_GRID_SIZE,
+                           Constants.CANVAS_GRID_SIZE)
+                # shift all following blocks
+                x_off += Constants.CANVAS_GRID_SIZE
+                y_off += Constants.CANVAS_GRID_SIZE
+            '''
+
+        # update before creating connections
+        self.update()
+        # create connections
+        for src_block, src_port, dst_block, dst_port in connections_n:
+            source = pasted_blocks[src_block].get_source(src_port)
+            sink = pasted_blocks[dst_block].get_sink(dst_port)
+            connection = self.connect(source, sink)
+            connection.setSelected(True)
 
 

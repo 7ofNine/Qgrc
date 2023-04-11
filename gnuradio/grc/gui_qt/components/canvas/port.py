@@ -44,6 +44,7 @@ class Port(QtWidgets.QGraphicsItem, CorePort):
 
         self._border_color = self._bg_color = colors.BLOCK_ENABLED_COLOR
         self.setFlag(QtWidgets.QGraphicsItem.GraphicsItemFlag.ItemStacksBehindParent)
+        self.setFlag(QtWidgets.QGraphicsItem.GraphicsItemFlag.ItemIsSelectable)
 
     #def itemChange(self, change, value):    # temporary disabled gets invoked when setFlag above is called and fails ! in calling up the hierarchy?
     #    if self._dir == "sink":
@@ -105,6 +106,7 @@ class Port(QtWidgets.QGraphicsItem, CorePort):
                 #color = tuple(max(c - dark, 0) for c in color)
         self._bg_color = color
         self._border_color = color
+
         #self._border_color = tuple(max(c - 0.3, 0) for c in color)
 
     def boundingRect(self):
@@ -126,6 +128,7 @@ class Port(QtWidgets.QGraphicsItem, CorePort):
         """
         Draw the port with a label.
         """
+        #log.debug(f"port: paint port {self.parent.key}")
         if self.hidden:
             return
         painter.setRenderHint(QtGui.QPainter.RenderHint.Antialiasing)

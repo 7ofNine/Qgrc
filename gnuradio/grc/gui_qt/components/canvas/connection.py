@@ -18,14 +18,17 @@ log = logging.getLogger(__name__)
 
 class Connection(CoreConnection, QtWidgets.QGraphicsPathItem):
 
-    def __init__(self, parent, source, sink):
+    def __init__(self, parent, port1, port2):
         log.debug("create Connection object")
-        CoreConnection.__init__(self, parent, source, sink)
+        if port1.is_sink and port2.is_source:
+            self.source = port2
+            self.sink = port1
+        if port1.is_source and port2.is_sink:
+            self.source = port1
+            self.sink = port2
+        CoreConnection.__init__(self, parent, self.source, self.sink)
         QtWidgets.QGraphicsPathItem.__init__(self)
 
-        self.source = source
-        self.sink = sink
-        
         #setup path objects
         self._line = QtGui.QPainterPath()
         self._arrowhead = QtGui.QPainterPath()
@@ -108,7 +111,7 @@ class Connection(CoreConnection, QtWidgets.QGraphicsPathItem):
     
 
     def paint(self, painter, option, widget):
-        #log.debug("paint connection")
+        log.debug("paint connection")
 
         self.update_connection_path()   # 
 

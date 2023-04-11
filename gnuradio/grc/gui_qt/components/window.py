@@ -36,9 +36,10 @@ from PyQt6.QtGui import QClipboard
 # Custom modules
 from . import FlowgraphView
 from .. import base, Utils
-from . import RotateCommand
+from . undoable_actions import RotateAction, MoveAction
 from . import ErrorsDialog
 from .canvas.block import PropsDialog
+from ...core.base import Element
 
 #from .import SaveOnCloseDialog
 
@@ -55,10 +56,10 @@ QStyle = QtWidgets.QStyle
 
 class SaveOnCloseDialog(QtWidgets.QMessageBox):
 
-    def __init__(self):
+    def __init__(self, graphname):
         super().__init__()
         
-        self.setText("Unsaved changes!")
+        self.setText(f"Unsaved changes for flowgraph {graphname}!")
         self.setInformativeText("Would you like to save changes before closing")
         self.setStandardButtons(QtWidgets.QMessageBox.StandardButton.Cancel|QtWidgets.QMessageBox.StandardButton.Save|QtWidgets.QMessageBox.StandardButton.Discard)
 
@@ -116,6 +117,8 @@ class MainWindow(QtWidgets.QMainWindow, base.Component):
         self.actions = {}
         self.menus = {}
         self.toolbars = {}
+        self.clipboard = None
+        self.undoView = None
         self.createActions(self.actions)
         self.createMenus(self.actions, self.menus)
         self.createToolbars(self.actions, self.toolbars)
@@ -156,7 +159,7 @@ class MainWindow(QtWidgets.QMainWindow, base.Component):
         
         self.tabWidget.addTab(fg_view, "Untitled")
       
-        self.clipboard = QtGui.QGuiApplication.clipboard()
+       
 
     '''def show(self):
         log.debug("Showing main window")
@@ -180,6 +183,12 @@ class MainWindow(QtWidgets.QMainWindow, base.Component):
     @property
     def currentFlowgraph(self):
         return self.tabWidget.currentWidget().flowgraphScene
+
+    @pyqtSlot(QtCore.QPointF)
+    def createMove(self, diff):
+        action = MoveAction(self.currentFlowgraph, diff)
+        self.currentFlowgraph.undoStack.push(action)
+        self.updateActions()
     
     def getFlowgraph(self,index):
         return self.tabWidget.widget(index).flowgraphScene
@@ -421,8 +430,8 @@ class MainWindow(QtWidgets.QMainWindow, base.Component):
         self.actions['horizontal_align_right'].setEnabled(False)
 
 
-        #if self.clipboard:                                 #TODO: setup clipboard
-        #    self.actions['paste'].setEnabled(True)
+        if self.clipboard:                                
+            self.actions['paste'].setEnabled(True)
 
         if conns:
             self.actions['delete'].setEnabled(True)
@@ -640,13 +649,15 @@ class MainWindow(QtWidgets.QMainWindow, base.Component):
                                filter='Flow Graph Files (*.grc);;All files (*.*)')
         return filename
 
-    def save(self, filename = None): # --- 3
-        if filename == "":
-            filter = '*.grc'
-        else:
+    def save(self, filename = None): 
+        if filename:
             filter = filename
+            selectedFilter =''
+        else:
+            filter = '*.grc'
+            selectedFilter ='*.grc'
         Save = QtWidgets.QFileDialog.getSaveFileName
-        filename, filtr = Save(self, self.actions['save'].statusTip(), filter)
+        filename, filtr = Save(self, self.actions['save'].statusTip(), filter, selectedFilter)
                                #filter='Flow Graph Files (*.grc);;All files (*.*)')
         return filename
 
@@ -659,7 +670,14 @@ class MainWindow(QtWidgets.QMainWindow, base.Component):
 
         fg_view.flowgraphScene.selectionChanged.connect(self.updateActions)  # it's actually the current flowgraph in the tabwidget
         fg_view.flowgraphScene.flowgraph_changed.connect(self.flowgraph_changed)
+        fg_view.flowgraphScene.itemMoved.connect(self.createMove)
         return fg_view
+
+    @pyqtSlot(Element)
+    def registerNewElement(self, elem):
+        action = NewElementAction(self.currentFlowgraph, elem)
+        self.currentFlowgraph.undoStack.push(action)
+        self.updateActions()
 
 
     # Overridden methods
@@ -694,8 +712,9 @@ class MainWindow(QtWidgets.QMainWindow, base.Component):
         self.menuBar().insertMenu(help, menu)
 
 
-
+    ###############################
     # Action Handlers
+    ###############################
     def new_triggered(self):  
         log.debug('new triggered')
         fg_view = self.create_new()
@@ -754,7 +773,6 @@ class MainWindow(QtWidgets.QMainWindow, base.Component):
         else:
             if self.currentFlowgraph.is_dirty():    # check if we have to save
                 try:
-                    #filename = self.save(str(os.path.basename(self.currentFlowgraph.get_filepath())))              # get filename for saving
                     filename = self.currentFlowgraph.get_filepath()
                     if filename:
                         self.currentFlowgraph.save(filename) 
@@ -762,7 +780,7 @@ class MainWindow(QtWidgets.QMainWindow, base.Component):
                         log.info(f'Saved flowgraph {filename}')
                     else:
                         log.debug('Flowgraph does not have a filename')
-                        self.save_as_triggered()
+                        self.save_as_triggered() # save with name
                         return
                 except IOError:
                     log.error(f'Save failed for {filename}: ' +str(IOError))
@@ -805,26 +823,29 @@ class MainWindow(QtWidgets.QMainWindow, base.Component):
         else:
             log.debug('Cancelled Save Copy action')
 
+    def close(self, flowgraph):
+        if flowgraph.is_dirty():    # check if we have to save
+            tabName = str(os.path.basename(flowgraph.get_filepath())).removesuffix('.grc')
+            question = SaveOnCloseDialog(tabName)
+            result = question.exec()
+            if result == QtWidgets.QMessageBox.StandardButton.Save:
+                filename = self.save(str(os.path.basename(flowgraph.get_filepath())))           # get filename for saving
+                flowgraph.save(filename) 
+            elif result == QtWidgets.QMessageBox.StandardButton.Discard:
+                pass
+            elif result == QtWidgets.QMessageBox.StandardButton.Cancel:
+                return
 
 
     #@pyqtSlot(int)   #creates problems using it with the last tab
-    def close_triggered(self, index):           # tab is being closed why does index not contain the current (closing) tab??
-        if isinstance(index, bool) and not index:           # closed via buttom
+    def close_triggered(self, index):                       
+        if isinstance(index, bool) and not index:           # closed via buttom index is False
             close_index = self.tabWidget.currentIndex()   
         else:
             close_index = index
         log.debug(f'Closing tab {close_index}')      
         closeFlowgraph =self.getFlowgraph(close_index)
-        if closeFlowgraph.is_dirty():    # check if we have to save
-            question = SaveOnCloseDialog()
-            result = question.exec()
-            if result == QtWidgets.QMessageBox.StandardButton.Save:
-                filename = self.save(str(os.path.basename(closeFlowgraph.get_filepath())))           # get filename for saving
-                closeFlowgraph.save(filename) 
-            elif result == QtWidgets.QMessageBox.StandardButton.Discard:
-                pass
-            elif result == QtWidgets.QMessageBox.StandardButton.Cancel:
-                return
+        self.close(closeFlowgraph)
 
         if self.tabWidget.count() == 1:
             self.tabWidget.currentChanged.disconnect()                   # work around for problem when closing last tab in the connected slot
@@ -841,10 +862,8 @@ class MainWindow(QtWidgets.QMainWindow, base.Component):
     def close_all_triggered(self):
         log.debug('close all')
         while self.tabWidget.count() > 0:
-            flowgraphview = self.tabWidget.widget(0)
-            if flowgraphview.is_dirty():    # check if we have to save
-                filename = self.save(str(os.path.basename(flowgraphview.get_filepath())))              # get filename for saving
-                flowgraphview.save(filename)  
+            flowgraph = self.tabWidget.widget(0).flowgraphScene
+            self.close(flowgraph)
             if self.tabWidget.count() == 1:
                 self.tabWidget.currentChanged.disconnect()         # work around for problem when closing last tab
                 self.tabWidget.removeTab(0)                        # causes crash. Nowhere described 
@@ -878,13 +897,13 @@ class MainWindow(QtWidgets.QMainWindow, base.Component):
 
     @pyqtSlot()
     def undo_triggered(self):  # ---
-        log.debug('undo: To be properly implemented')
+        log.debug('undo')
         self.currentFlowgraph.undoStack.undo()
         self.updateActions()
     
     @pyqtSlot()
     def redo_triggered(self): # ---
-        log.debug('redo: To be properly implemented')
+        log.debug('redo')
         self.currentFlowgraph.undoStack.redo()
         self.updateActions()
 
@@ -893,13 +912,27 @@ class MainWindow(QtWidgets.QMainWindow, base.Component):
         log("view_undo_stack: To be properly implemented. will it ever??'")
 
     def cut_triggered(self): # --- 
-        log.debug('cut: not implemented, yet')
+        log.debug('cut')
+        self.copy_triggered()
+        self.currentFlowgraph.delete_selected()
+        self.updateActions()
 
-    def copy_triggered(self): # --- 
-        log.debug('copy: not implemented, yet')
+    def copy_triggered(self):
+        log.debug('copy')
+        self.clipboard = self.currentFlowgraph.copy_to_clipboard()
+        self.updateActions()
 
-    def paste_triggered(self): # --- 
-        log.debug('paste: not implemented, yet')
+    def paste_triggered(self):
+        log.debug('paste')
+        if self.clipboard:
+            self.currentFlowgraph.paste_from_clipboard(self.clipboard)
+            self.currentFlowgraph.update()
+        else:
+            log.debug('clipboard is empty')
+
+
+
+
 
     @pyqtSlot()
     def delete_triggered(self): # --- 
@@ -921,14 +954,14 @@ class MainWindow(QtWidgets.QMainWindow, base.Component):
     @pyqtSlot()
     def rotate_ccw_triggered(self): # --- 
         log.debug('rotate_ccw')
-        rotateCommand = RotateCommand(self.currentFlowgraph, -90)
+        rotateCommand = RotateAction(self.currentFlowgraph, -90)
         self.currentFlowgraph.undoStack.push(rotateCommand)
         self.updateActions()
     
     @pyqtSlot()
     def rotate_cw_triggered(self): # --- 
         log.debug('rotate_cw')
-        rotateCommand = RotateCommand(self.currentFlowgraph, 90)
+        rotateCommand = RotateAction(self.currentFlowgraph, 90)
         self.currentFlowgraph.undoStack.push(rotateCommand)
         self.updateActions()
 
@@ -1124,6 +1157,8 @@ class MainWindow(QtWidgets.QMainWindow, base.Component):
         #TODO: check for files to be saved!
         self._close_pending = True
         return super().closeEvent(a0)
+
+    #######################################
 
     @pyqtSlot(int)
     def current_tab_changed(self, tabindex):

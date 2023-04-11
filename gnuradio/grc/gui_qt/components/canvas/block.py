@@ -410,35 +410,33 @@ class Block(QtWidgets.QGraphicsItem, CoreBlock):
         return QtCore.QRectF(-2.5, -2.5, self.width+5, self.height+5) # margin to avoid artifacts
 
     def registerMoveStarting(self):
-        #log.debug("register move starting block")
+        log.debug("Block: register move starting")
         self.moving = True
         self.movingFrom = self.pos()
 
     def registerMoveEnding(self):
-        #log.debug("register move ending block")
+        log.debug("BLock: register move ending")
         self.moving = False
         self.movingTo = self.pos()
 
     def mouseReleaseEvent(self, e):
-        log.debug("block {} mouse release".format(self.key))
-        if not self.movingFrom == self.pos():
-            self.parent.registerMoveCommand(self)
+        log.debug('Block: mouse release')
         super(self.__class__, self).mouseReleaseEvent(e)
 
     def mousePressEvent(self, e):
-        log.debug("block {} mouse pressed".format(self.key))
-        self.parent.registerBlockMovement(self)
+        log.debug(f"Block: {self.key} mouse press")
+        #self.parent.registerBlockMovement(self)
         try:
             self.parent.app.DocumentationTab.setText(self.documentation[''])
         except KeyError:
             pass
 
         self.moveToTop()
-        log.debug("block {} mouse pressed forwarded, enabled {}".format(self.key, self.enabled))
+        log.debug(f"Block: {self.key} mouse press forwarded, enabled { self.enabled}")
         super(self.__class__, self).mousePressEvent(e)
 
     def mouseDoubleClickEvent(self, e):
-        log.debug(f"Block double click {self.name}")
+        log.debug(f"Block: mouse double click {self.name}")
         e.accept()
         super(self.__class__, self).mouseDoubleClickEvent(e)
         props = PropsDialog(self)
@@ -511,3 +509,10 @@ class Block(QtWidgets.QGraphicsItem, CoreBlock):
             return -20
         else:
             return 20
+
+    def setStates(self, states):
+        for k, v in states.items():
+            self.states[k] = v
+
+        self.setPos(self.states['coordinate'][0], self.states['coordinate'][1])
+        self.setRotation(self.states['rotation'])
